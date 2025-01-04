@@ -14,6 +14,12 @@ from scipy.special import softmax
 import time
 
 from featureDict import featureDict
+
+import matplotlib.pyplot as plt
+import networkx as nx
+import pydot
+from networkx.drawing.nx_pydot import graphviz_layout
+
 #This is for extra branches related to the b charge tagger
 #These are jet constituents that are not usually stored in nano aod files
 
@@ -648,7 +654,7 @@ class Processor(pepper.ProcessorBasicPhysics):
         lep_recursion_level = 1
         selector.data["lep_mother_final"] = self.lepton_recursion(lep_recursion_level,lepton_mother_1,selector.data)
         #Not put none condition for lepton at the moment
-        selector.data["b_mother_final"],selector.data["non_b_mother_final"] = self.dR_bjet_part_match(selector.data)
+        selector.data["b_mother_final"],selector.data["non_b_mother_final"], selector.data["bjet_part_dr"] = self.dR_bjet_part_match(selector.data)
 
         mom_dict = ["no_mask", "b_w_l_w","b_w_l_r","b_r_l_w", "b_r_l_r", "b_l_sign_mismatch"]
         #mom_dict = ["b_w_l_w","b_w_l_r","b_r_l_w", "b_r_l_r", "b_l_sign_mismatch"]
@@ -665,6 +671,8 @@ class Processor(pepper.ProcessorBasicPhysics):
 
         
         selector.data["top_max_pt"] = ak.max(selector.data["GenPart"][(abs(selector.data["GenPart"].pdgId)==6)]["pt"],axis=1)
+
+        self.event_display(selector.data)
 
         '''
         for i in range(len(selector.data["Jet"])):
@@ -772,7 +780,7 @@ class Processor(pepper.ProcessorBasicPhysics):
         e = time.time()
 
         #'''
-        '''
+        #'''
         print("Time a",a)
         print("Time b",b)
         print("Time c",c)
@@ -783,7 +791,7 @@ class Processor(pepper.ProcessorBasicPhysics):
         print("Time taken to call the frozen function by looping over all the jets",c-b)
         print("Time taken for all the mask assignments and almost all cuts etc (just before printing)",d-c)
         print("Time taken for printing event wise",e-d)
-        '''
+        #'''
 
         if "btag_sf" in self.config and len(self.config["btag_sf"]) != 0:
             selector.add_cut("btagSF", partial(self.btag_sf, is_mc))
@@ -1284,14 +1292,8 @@ class Processor(pepper.ProcessorBasicPhysics):
         sign_b_mom = data["non_b_mother_final"]/abs(data["non_b_mother_final"])
         sign_l_mom = data["lep_mother_final"].pdgId/abs(data["lep_mother_final"].pdgId)
 
-        '''
-        for i in range(len(data["Lepton"])):
-            print("Event number",i)
-            print("B mom sign",sign_b_mom[i])
-            print("Lepton mom sign",sign_l_mom[i])
-        '''
-
         #Since this is always going to be used in combination with b_mask and l_mask, using [:,0] is ok since there is only one element
+        #Turns out this is not ok, with the non recursive method it can have two mothers (weird but probable)
         sign_mask = (sign_b_mom[:,0] == sign_l_mom[:,0]) 
         false_array = [False]*len(data["Lepton"])
 
@@ -1310,6 +1312,23 @@ class Processor(pepper.ProcessorBasicPhysics):
         cats["b_r_l_w"] = ak.where(ak.is_none(b_r_l_w), false_array, b_r_l_w)
         cats["b_r_l_r"] = ak.where(ak.is_none(b_r_l_r), false_array, b_r_l_r)
         cats["b_l_sign_mismatch"] = ak.where(ak.is_none(b_l_sign_mismatch), false_array, b_l_sign_mismatch)
+
+        '''
+        for i in range(len(data["Lepton"])):
+            print("Event number",i)
+            print("B jet part dr",data["bjet_part_dr"][i])
+            print("B mask",b_mask[i])
+            print("Lepton mask",l_mask[i])
+            print("B mom sign",sign_b_mom[i])
+            print("Lepton mom sign",sign_l_mom[i])
+            print("Sign mask",sign_mask[i])
+            print("Mom mask values outside the loop")
+            print("b_w_l_w",b_w_l_w[i])
+            print("b_w_l_r",b_w_l_r[i])
+            print("b_r_l_w",b_r_l_w[i])
+            print("b_r_l_r",b_r_l_r[i])
+            print("b_l_sign_mismatch",b_l_sign_mismatch[i])
+        '''
 
         return cats
 
@@ -1693,17 +1712,85 @@ class Processor(pepper.ProcessorBasicPhysics):
         b_mother_final = ak.where(ak.is_none(dr_mask), empty_array, match_pdgId)
         non_b_mother_final = ak.where(ak.is_none(dr_mask), empty_array, non_b_mother)
 
-        '''
+        two_mothers = ak.num(non_b_mother_final,axis=1)
+        #two_mom_num = ak.num(two_mothers[two_mothers>1],axis=0)
+        two_mom_num = ak.num(two_mothers[two_mothers==2],axis=0) #for debugging
+
+        #print("Number of leading jet matched events (b quarks) having more than one mother",two_mom_num)
+        print("Number of leading jet matched events (b quarks) having exactly two mothers",two_mom_num)
+
+        #'''
         for i in range(len(data["Jet"])):
             print("Event number",i)
             print("Leading B jet pt",data["bjets"][i].pt)
             print("Leading B jet matched gen pt",data["bjets"][i].matched_gen.pt)
-
+            print("dR dummy",dr_dummy[i])
+            print("first level of b mothers",b_bbar_object[i].pdgId)
+            print("second level of b mothers",mother_1[i].pdgId)
+            print("Matched pdg id",match_pdgId[i])
             print("Bcharge good",non_b_mother[i])
             print("Bcharge good final",non_b_mother_final[i])
-        '''
+            print("Number of non b mothers",two_mothers[i])
+        #'''
 
-        return b_mother_final, non_b_mother_final
+        return b_mother_final, non_b_mother_final, dr_dummy
+
+    def event_display(self, data):
+        for i in range(len(data["Jet"])):
+            if i == 434: #Only one event for debugging, do not want to have too many plots
+                G = nx.DiGraph()
+                pdgIds = {}
+                print()
+                print("Event number",i)
+                ngenpart = len(data["GenPart"][i])
+                print("Number of gen particles",ngenpart)
+                for gpIdx in range(ngenpart):
+                    motherIdx = data["GenPart"][i]["genPartIdxMother"][gpIdx]
+                    pdgId = data["GenPart"][i]["pdgId"][gpIdx]
+                    pdgIds[gpIdx] = pdgId
+                    print()
+                    print("motherIdx",motherIdx)
+                    if motherIdx>-1:
+                        mother_pdgId = data["GenPart"][i]["pdgId"][motherIdx]
+                        print("pdg id of mother particle?", mother_pdgId)
+
+                    else:
+                        print("No mother")
+                    print("pdgId",pdgId)
+                    G.add_node(gpIdx,label=pdgId)
+                    if motherIdx>-1:
+                        G.add_edge(motherIdx,gpIdx)
+
+
+                nx.set_node_attributes(G, pdgIds,"pdgIds")
+                pos = graphviz_layout(G,prog="twopi")
+                
+                #hahaha
+                pos_new = {}
+                for key in pos.keys():
+                    #print()
+                    #print("Int key",int(key))
+                    #pos[new_int_key] = pos.pop[key]
+                    pos_new[int(key)] = pos[key]
+                    str_keys = 0
+                    #print("New keys",pos_new.keys())
+                    #print(pos_new)
+                    #print("Length of keys",len(pos_new))
+
+                pos = pos_new
+                print(pos.keys())
+                print("Graph object",G)
+                print(pos)
+
+                #nx.draw(G,pos,node_size=10,font_size=8,with_labels=True,labels=pdgIds)
+                #nx.draw_networkx(G,pos,node_size=10,font_size=8,with_labels=True,labels=pdgIds)    
+                nx.draw_networkx(G,pos,node_size=20,font_size=8,with_labels=True,labels=pdgIds)    
+                #print("Event string name",str(e.event))
+                plt.savefig("ST_s_channel_"+str(i)+".png")
+                plt.clf()
+                
+                hahaha
+
 
     def do_trigger_sf_sl(self, data):
         """Compute identification and isolation scale factors for
