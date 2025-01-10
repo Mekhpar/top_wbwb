@@ -701,12 +701,25 @@ class Processor(pepper.ProcessorBasicPhysics):
         #top_index = ak.where(abs(selector.data["GenPart"].pdgId)==6)
 
         #Debugging for ak.where workaround
+        '''
         broadcast_value = -1
         local_index = ak.local_index(abs(selector.data["GenPart"].pdgId)==6)
         broadcast = ak.broadcast_arrays(abs(selector.data["GenPart"].pdgId)==6, broadcast_value)[1]
         top_index = ak.where(abs(selector.data["GenPart"].pdgId)==6, local_index, broadcast)
         top_index_final = top_index[top_index != broadcast_value]        
+        '''
 
+        daughter_index_b_1_final, daughter_top, top_last_sign, data = self.top_daughters(selector.data)
+        recursion_level = 1
+        resonant_b = [1]*len(data["Jet"]) #Initial number of daughters which is assumed to 1 at the moment for each event
+        selector.data["n_daughters"] = self.b_daughters_recursion(resonant_b, recursion_level, daughter_index_b_1_final, daughter_top, top_last_sign, selector.data)
+
+        daughter_dict = ["zero_daughters", "non_zero_daughters"]
+        selector.set_cat("daughter_cat", set(daughter_dict))
+        selector.set_multiple_columns(partial(self.daughter_categories,is_mc))
+
+        selector.data["resonant_b_pt"] = daughter_top[abs(daughter_top.pdgId) == 5].pt
+        selector.data["bjet_dr_min"] = ak.min(selector.data["bjet_part_dr"],axis=1)
         #Not possible to calculate because MET eta does not exist (!!)
         '''
         selector.data["dr_lep_met"] = np.sqrt(pow(selector.data["Lepton"].eta[:,0]-selector.data["MET"].eta,2) + pow(selector.data["Lepton"].phi[:,0]-selector.data["MET"].phi,2))
@@ -725,7 +738,7 @@ class Processor(pepper.ProcessorBasicPhysics):
             print("dR of lepton and MET calculated outside loop",selector.data["dr_lep_met"][i])
         '''
 
-        #'''
+        '''
         for i in range(len(selector.data["Jet"])):
             print()
             print("Event number",i)
@@ -834,105 +847,21 @@ class Processor(pepper.ProcessorBasicPhysics):
                 for key in mom_dict:
                     print(key,selector.data[key][i])
 
-                #Do not put in loop later - trying to find daughters of top/antitop, and consequently the resonant b/bbar quark
-                '''
-                top_object = selector.data["GenPart"][(abs(selector.data["GenPart"].pdgId)==6)][i]
+                print("Number of daughters (non fsr and non b) for resonant b",selector.data["n_daughters"][i])
+                print("Resonant b pt (after emitting directly from top)",selector.data["resonant_b_pt"][i])
+                print("dR after matching b quarks to matched_gen",selector.data["bjet_part_dr"][i])
+                print("Min dR after matching b quarks to matched_gen",selector.data["bjet_dr_min"][i])
+                print("Values of b daughter masks")
+                for key in daughter_dict:
+                    print(key,selector.data[key][i])
+
                 
-                for top in top_object:
-                    daughter_top = selector.data["GenPart"][selector.data["GenPart"][selector.data["GenPart"][i].genPartIdxMother][i] == top][i]
-                    print("Daughter pdg ids",daughter_top.pdgId)
-                '''
-
-                print("Local index array for ak.where",local_index[i])
-                print("Broadcast for ak.where",broadcast[i])
-                print("Number of particles in local index array",len(local_index[i]))
-                print("Number of particles in broadcast array",len(broadcast[i]))
-                print("List of particle pdg ids",ak.to_numpy(selector.data["GenPart"][i].pdgId))
-                print("Number of gen particles",len(selector.data["GenPart"][i]))
-                print("Top index values",top_index_final[i])
-
-                for top in top_index_final[i]:
-                    print("Top index",top)
-                    top_pdgid = selector.data["GenPart"][i][top].pdgId
-                    top_pdg_sign = top_pdgid/abs(top_pdgid)
-                    print("Top/antitop pdg sign",top_pdg_sign)
-                    mom_mask = selector.data["GenPart"][i].genPartIdxMother == top
-                    print("Mother matching mask",ak.to_numpy(mom_mask))
-                    daughter_top = selector.data["GenPart"][i][mom_mask]
-
-                    broadcast_value = -1
-                    daughter_index = ak.where(mom_mask, ak.local_index(mom_mask), ak.broadcast_arrays(mom_mask, broadcast_value)[1])
-                    daughter_index_final = daughter_index[daughter_index != broadcast_value]        
-
-
-                    #daughter_top = selector.data["GenPart"][mom_mask][i] - This doesn't work??
-                    print("Daughter pdg ids",daughter_top.pdgId)
-                    print("Daughter particle indices",daughter_index_final)
-
-                    top_daughters = ak.num(daughter_top[daughter_top.pdgId == top_pdg_sign*6],axis = 0)
-                    b_daughters = ak.num(daughter_top[daughter_top.pdgId == top_pdg_sign*5],axis = 0)
-                    w_daughters = ak.num(daughter_top[daughter_top.pdgId == top_pdg_sign*24],axis = 0)
-
-                    print("Number of top daughters (same sign as mother)",top_daughters)
-                    print("Number of b daughters (resonant)",b_daughters)
-                    print("Number of W daughters (resonant)",w_daughters)
-
-                    #Obviously it needs to have exactly one b and exactly one W and nothing else to be considered as a resonance step
-                    if (top_daughters == 0) & (b_daughters==1) & (w_daughters==1) & (len(daughter_top.pdgId)==2):
-                        print("Resonant top step")
-                        b_index = daughter_index_final[daughter_top.pdgId == top_pdg_sign*5]
-                        print("B index at resonant step",b_index)
-
-
-                        mom_mask_1 = selector.data["GenPart"][i].genPartIdxMother == b_index
-                        print("Mother matching mask",ak.to_numpy(mom_mask_1))
-                        daughter_b = selector.data["GenPart"][i][mom_mask_1]
-
-                        daughter_index_b = ak.where(mom_mask_1, ak.local_index(mom_mask_1), ak.broadcast_arrays(mom_mask_1, broadcast_value)[1])
-                        daughter_index_b_final = daughter_index_b[daughter_index_b != broadcast_value]        
-
-
-                        #daughter_top = selector.data["GenPart"][mom_mask][i] - This doesn't work??
-                        print("Daughter pdg ids of first b",daughter_b.pdgId)
-                        print("Daughter particle indices of first b",daughter_index_b_final)
-
-                        b_daughters_1 = ak.num(daughter_b[daughter_b.pdgId == top_pdg_sign*5],axis = 0)
-                        print("Number of b daughters of resonant b quark",b_daughters_1)
-
-                        neutral_fsr_daughters_1 = ak.num(daughter_b[(abs(daughter_b.pdgId) == 21) | (abs(daughter_b.pdgId) == 22) | (abs(daughter_b.pdgId) == 23)],axis = 0)
-                        print("Number of neutral fsr daughters of resonant b quark",neutral_fsr_daughters_1)
-
-                        if (b_daughters_1==1) & (len(daughter_b.pdgId)==(1+neutral_fsr_daughters_1)):
-
-                            b_index_2 = daughter_index_b_final[daughter_b.pdgId == top_pdg_sign*5]
-
-                            mom_mask_2 = selector.data["GenPart"][i].genPartIdxMother == b_index_2
-                            print("Mother matching mask at second level",ak.to_numpy(mom_mask_2))
-                            daughter_b_2 = selector.data["GenPart"][i][mom_mask_2]
-
-                            daughter_index_b_2 = ak.where(mom_mask_2, ak.local_index(mom_mask_2), ak.broadcast_arrays(mom_mask_2, broadcast_value)[1])
-                            daughter_index_b_2_final = daughter_index_b_2[daughter_index_b_2 != broadcast_value]        
-
-
-                            #daughter_top = selector.data["GenPart"][mom_mask][i] - This doesn't work??
-                            print("Daughter pdg ids of second b",daughter_b_2.pdgId)
-                            print("Daughter particle indices of second b",daughter_index_b_2_final)
-
-                            b_daughters_2 = ak.num(daughter_b_2[daughter_b_2.pdgId == top_pdg_sign*5],axis = 0)
-                            print("Number of b daughters of second b quark",b_daughters_2)
-
-                            neutral_fsr_daughters_2 = ak.num(daughter_b_2[(abs(daughter_b_2.pdgId) == 21) | (abs(daughter_b_2.pdgId) == 22) | (abs(daughter_b_2.pdgId) == 23)],axis = 0)
-                            print("Number of neutral fsr daughters of second b quark",neutral_fsr_daughters_2)
-
-                '''
-                if i>20:
-                    pass
-                else:
+                if i==689:
                     self.event_display(i,"/afs/desy.de/user/p/paranjpe/top_wbwb/pepper/schannel/",selector.data)
-                '''    
+                    
 
                 #Some plotting because I am not completely convinced that the min dR b quark is actually hadronizing and producing a bjet
-                '''
+                
                 if (selector.data["top"][i] == True) & (selector.data["id_bneg_rec_bneg"][i] == True) & (selector.data["b_r_l_r"][i] == True):
                     top_neg +=1
                     print("Masks that are true - top, id_bneg_rec_bneg, b_r_l_r")
@@ -965,15 +894,15 @@ class Processor(pepper.ProcessorBasicPhysics):
                         pass
                     else:
                         self.event_display(i,"/afs/desy.de/user/p/paranjpe/top_wbwb/pepper/top_tchannel_antitop_bpos/",selector.data)
-                '''
+                
                 #print("Inconclusive events",selector.data["inconclusive"][i])
                 #print("Events successfully tagged",selector.data["conclusive"][i])
-        #'''
+        '''
 
         e = time.time()
 
         #'''
-        #'''
+        '''
         print("Time a",a)
         print("Time b",b)
         print("Time c",c)
@@ -984,7 +913,7 @@ class Processor(pepper.ProcessorBasicPhysics):
         print("Time taken to call the frozen function by looping over all the jets",c-b)
         print("Time taken for all the mask assignments and almost all cuts etc (just before printing)",d-c)
         print("Time taken for printing event wise",e-d)
-        #'''
+        '''
 
         if "btag_sf" in self.config and len(self.config["btag_sf"]) != 0:
             selector.add_cut("btagSF", partial(self.btag_sf, is_mc))
@@ -1488,6 +1417,13 @@ class Processor(pepper.ProcessorBasicPhysics):
 
         return cats
         #'''
+
+    def daughter_categories(self,is_mc,data):
+        cats = {}
+        cats["zero_daughters"] = data["n_daughters"] == 0
+        cats["non_zero_daughters"] = data["n_daughters"] > 0
+
+        return cats
 
     def mother_categories(self,is_mc,data):
         cats = {}
@@ -2064,6 +2000,102 @@ class Processor(pepper.ProcessorBasicPhysics):
             #'''
 
         return b_mother
+
+    def top_daughters(self,data):
+        broadcast_value = -1
+        local_index = ak.local_index(abs(data["GenPart"].pdgId)==6)
+        broadcast = ak.broadcast_arrays(abs(data["GenPart"].pdgId)==6, broadcast_value)[1]
+        top_index = ak.where(abs(data["GenPart"].pdgId)==6, local_index, broadcast)
+        top_index_final = top_index[top_index != broadcast_value]          
+
+        #Using a caveat, just take the last element of all the top indices, obviously we are assuming that they are all part of the same chain (since single top)
+        #and obviously if it produces a W and b before that then it won't give another top in the chain
+        last_top = top_index_final[:,-1]
+        mom_mask = data["GenPart"].genPartIdxMother == last_top
+
+        top_pdgid = data["GenPart"][abs(data["GenPart"].pdgId)==6].pdgId
+        top_last_pdgid = top_pdgid[:,-1]
+        top_last_sign = top_last_pdgid/abs(top_last_pdgid)
+
+        daughter_top = data["GenPart"][mom_mask]
+        daughter_index = ak.where(mom_mask, ak.local_index(mom_mask), ak.broadcast_arrays(mom_mask, broadcast_value)[1])
+        daughter_index_b_1_final = daughter_index[daughter_index != broadcast_value]        
+
+        return daughter_index_b_1_final, daughter_top, top_last_sign, data
+
+
+
+
+    def b_daughters_recursion(self, n_daughters, recursion_level, daughter_index_b_1_final, daughter_previous, top_last_sign, data):
+        broadcast_value = -1
+        empty_array = [[-1]]*len(data["Jet"])
+        null_array = [[]]*len(data["Jet"])
+        default_array = [None]*len(data["Jet"])
+        zero_daughters = [0]*len(data["Jet"])
+
+        #First step of finding daughters for b quark from the resonant step
+        #===================================================================================================================================================
+
+        b_index_1 = daughter_index_b_1_final[daughter_previous.pdgId == top_last_sign*5]
+
+        b_mask_1 = ak.mask(data,ak.num(b_index_1)>0)
+        b_index_1_fill = ak.where(ak.is_none(b_mask_1), empty_array, b_index_1)
+
+        mom_mask_1 = data["GenPart"].genPartIdxMother == b_index_1_fill[:,0]
+        daughter_b_1 = data["GenPart"][mom_mask_1]
+        daughter_index_b_1 = ak.where(mom_mask_1, ak.local_index(mom_mask_1), ak.broadcast_arrays(mom_mask_1, broadcast_value)[1])
+        daughter_index_b_2_final = daughter_index_b_1[daughter_index_b_1 != broadcast_value]        
+
+
+        #Obviously b_daughters_1 and neutral_fsr_daughters_1 will be set to 0 when we have to replace it with -1
+        daughter_b_1 = ak.where(ak.is_none(b_mask_1), null_array, daughter_b_1)
+        daughter_index_b_2_final = ak.where(ak.is_none(b_mask_1), null_array, daughter_index_b_2_final)
+
+        b_daughters_1 = ak.num(daughter_b_1[daughter_b_1.pdgId == top_last_sign*5],axis = 1)
+        neutral_fsr_daughters_1 = ak.num(daughter_b_1[(abs(daughter_b_1.pdgId) == 21) | (abs(daughter_b_1.pdgId) == 22) | (abs(daughter_b_1.pdgId) == 23)],axis = 1)
+
+        daughter_mask_2 = ak.mask(data,(b_daughters_1==1) & (ak.num(daughter_b_1) == b_daughters_1+neutral_fsr_daughters_1))
+        n_daughter_fill = ak.where(ak.is_none(daughter_mask_2), ak.num(daughter_b_1) - (b_daughters_1+neutral_fsr_daughters_1), default_array)
+
+        if recursion_level == 1:
+            n_daughters = n_daughter_fill
+        elif recursion_level > 1:
+            n_daughters = ak.where(ak.is_none(n_daughters), n_daughter_fill, n_daughters)
+
+        #ending_events = ak.num(n_daughters[n_daughters==0],axis = 0)
+        ending_events = ak.num(b_daughters_1[b_daughters_1==0],axis = 0)
+        #print("Number of events that have b at the end of the chain",ending_events)
+        '''
+        for i in range(len(data["Jet"])):
+            print()
+            print("Event number",i)
+            print("Recursion level",recursion_level)
+            print("Last top sign",top_last_sign[i])
+            print("Daughter pdg ids",daughter_previous[i].pdgId)
+            print("Daughter particle indices",daughter_index_b_1_final[i])
+
+            print("B index at step (filled with -1s)",b_index_1_fill[i])
+            print("Mother matching mask",ak.to_numpy(mom_mask_1[i]))
+
+            print("Daughter pdg ids of b",daughter_b_1[i].pdgId)
+            print("Daughter particle indices of b",daughter_index_b_2_final[i])
+
+            print("Number of b daughters of b quark",b_daughters_1[i])
+            print("Number of neutral fsr daughters of b quark",neutral_fsr_daughters_1[i])
+
+            print("Daughter mask 2",((b_daughters_1==1) & (ak.num(daughter_b_1) > b_daughters_1+neutral_fsr_daughters_1))[i])
+            print("B index mask",(b_daughters_1==1)[i])
+            print("Other daughters mask",(ak.num(daughter_b_1) > b_daughters_1+neutral_fsr_daughters_1)[i])
+
+            print("Number of daughters (after first b where it does not give another b)",n_daughter_fill[i])
+            print("Final number of daughters at that level",n_daughters[i])
+        '''
+        #if recursion_level < 3:
+        if ending_events < len(data["Jet"]):
+            recursion_level+=1
+            n_daughters = self.b_daughters_recursion(n_daughters, recursion_level, daughter_index_b_2_final, daughter_b_1, top_last_sign, data) 
+
+        return n_daughters
 
 
 
