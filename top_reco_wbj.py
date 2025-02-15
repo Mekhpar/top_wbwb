@@ -939,7 +939,7 @@ class Processor(pepper.ProcessorBasicPhysics):
             print()
             print("Event number for probability",i)
             print("Jet pt",selector.data["Jet"][i]["pt"])
-            #print("B jet pt",selector.data["bjets"][i]["pt"])
+            #print("B jet pt",selector.data["bjets_tight"][i]["pt"])
             print(selector.data["prob_neg"][i])
             print(selector.data["prob_zerobar"][i])
             print(selector.data["prob_zero"][i])
@@ -1008,11 +1008,47 @@ class Processor(pepper.ProcessorBasicPhysics):
         
         #selector.set_column("nbtag", self.num_btags)
         selector.set_column("nbtag", partial(self.num_btags,""))
-        #selector.set_column("bjets", partial(self.build_btag_column,is_mc))  
-        #selector.set_multiple_columns({"bjets","meson_tag_real"}, partial(self.build_btag_column,is_mc))  #added meson tag
+        #selector.set_column("bjets_tight", partial(self.build_btag_column,is_mc))  
+        #selector.set_multiple_columns({"bjets_tight","meson_tag_real_tight"}, partial(self.build_btag_column,is_mc))  #added meson tag
 
-        selector.data["bjets"], selector.data["meson_tag_real"],selector.data["gen_meson_real"], selector.data["prob_neg_real"], selector.data["prob_zerobar_real"], selector.data["prob_zero_real"], selector.data["prob_pos_real"] = self.build_btag_column(is_mc,selector.data)
+        selector.data["real_flag_tight"], selector.data["btag_tight"], selector.data["bjets_tight"], selector.data["meson_tag_real_tight"],selector.data["gen_meson_real_tight"], selector.data["prob_neg_real_tight"], selector.data["prob_zerobar_real_tight"], selector.data["prob_zero_real_tight"], selector.data["prob_pos_real_tight"] = self.build_btag_column(is_mc,"btagged", "tight", selector.data)
+        selector.data["real_flag_loose"], selector.data["btag_loose"], selector.data["bjets_loose"], selector.data["meson_tag_real_loose"],selector.data["gen_meson_real_loose"], selector.data["prob_neg_real_loose"], selector.data["prob_zerobar_real_loose"], selector.data["prob_zero_real_loose"], selector.data["prob_pos_real_loose"] = self.build_btag_column(is_mc,"btagged_loose", "loose", selector.data)
+        '''
+        for i in range(len(selector.data["Jet"])):
+            print()
+            print("Event number",i)
+            print("Jet pt",selector.data["Jet"][i]["pt"])
+            print("Btag flavor overall scores",selector.data["Jet"][i]["btag"])
+            print("Tight jets")
+            print("Bjet meson tag reshaped",selector.data["meson_tag_real_tight"][i])
+            print("Bjet gen meson tag",selector.data["gen_meson_real_tight"][i])
+            print("Btag flavor scores",selector.data["btag_tight"][i])
+            print("Real flag tight",selector.data["real_flag_tight"][i])
+            print("Bjet tight pt",selector.data["bjets_tight"][i]["pt"])
+            print("Real Probability values")
+            print("B-",selector.data["prob_neg_real_tight"][i])
+            print("B0bar",selector.data["prob_zerobar_real_tight"][i])
+            print("B0",selector.data["prob_zero_real_tight"][i])
+            print("B+",selector.data["prob_pos_real_tight"][i])
 
+            print("Loose (medium) jets")
+            print("Bjet meson tag reshaped",selector.data["meson_tag_real_loose"][i])
+            print("Bjet gen meson tag",selector.data["gen_meson_real_loose"][i])
+            print("Btag flavor scores",selector.data["btag_loose"][i])
+            print("Bjet tight pt",selector.data["bjets_loose"][i]["pt"])
+            print("Real flag loose",selector.data["real_flag_loose"][i])
+
+            print("Real loose Probability values")
+            print("B-",selector.data["prob_neg_real_loose"][i])
+            print("B0bar",selector.data["prob_zerobar_real_loose"][i])
+            print("B0",selector.data["prob_zero_real_loose"][i])
+            print("B+",selector.data["prob_pos_real_loose"][i])
+
+            print("Number of tight jets",len(selector.data["bjets_tight"][i]))
+            print("Number of loose (medium) jets",len(selector.data["bjets_loose"][i]))
+
+        hahaha
+        '''
         #==================================Fake and missing, not quite sure what to do with them at the moment==============================
         if is_mc:
             selector.data["bjets_miss"], selector.data["gen_meson_miss"], selector.data["prob_neg_miss"], selector.data["prob_zerobar_miss"], selector.data["prob_zero_miss"], selector.data["prob_pos_miss"] = self.build_missing_btag_column(is_mc,selector.data)
@@ -1078,9 +1114,13 @@ class Processor(pepper.ProcessorBasicPhysics):
         print(type(selector.data["id_bneg_rec_bneg"]))
         '''
 
-        selector.set_column("mlb",partial(self.mass_lepton_bjet,"Lepton","bjets"))    
-        selector.set_column("dR_lb",partial(self.dR_lepton_bjet,"Lepton","bjets"))    
-        #selector.set_column("q_net",partial(self.charge_lepton_bjet,"Lepton","bjets"))
+        selector.set_column("mlb",partial(self.mass_lepton_bjet,"Lepton","bjets_tight"))    
+        selector.set_column("dR_lb",partial(self.dR_lepton_bjet,"Lepton","bjets_tight"))    
+        selector.set_column("dphi_lb",partial(self.dphi_lepton_bjet,"Lepton","bjets_tight"))    
+
+        #It is probably more useful to have the absolute value of the eta of the leading bjet
+        selector.set_column("abs_eta_b",partial(self.eta_leading_bjet,"bjets_tight"))    
+        #selector.set_column("q_net",partial(self.charge_lepton_bjet,"Lepton","bjets_tight"))
 
 
         data,lepton_mother_1 = self.lepton_mother(selector.data)
@@ -1115,14 +1155,14 @@ class Processor(pepper.ProcessorBasicPhysics):
 
         #Trying out new chain making here - starting from last to first (suggestion by Alberto)
         #because it is much easier to find the mother index rather than compare a mother index (finding the daughters essentially)
-
+        #'''
         index_gen = ak.local_index(selector.data["GenPart"],axis=1)
         abs_pdgid = abs(selector.data["GenPart"]["pdgId"])
 
         mask = abs_pdgid == 5
         part_index = index_gen[mask]
         object = selector.data["GenPart"][mask]
-        mother = object["genPartIdxMother"] #This is nothing but a set of indices
+        mother_index = object["genPartIdxMother"] #This is nothing but a set of indices
         #part_index = ak.sort(part_index,axis=1,ascending=True)   
 
         #Converting to numpy array hopefully to take intersection and complement
@@ -1130,7 +1170,7 @@ class Processor(pepper.ProcessorBasicPhysics):
         npart_max_pad = ak.max(ak.num(part_index,axis=1))
         print("Maximum number of parts",npart_max_pad)
         part_ak = ak.pad_none(part_index, npart_max_pad, axis=1)
-        mom_ak = ak.pad_none(mother, npart_max_pad, axis=1)
+        mom_ak = ak.pad_none(mother_index, npart_max_pad, axis=1)
 
         part_dummy = ak.from_numpy(np.full((len(selector.data["GenPart"]), npart_max_pad), -2))#Since -2 cannot be the mother index of anything
         print(ak.num(part_dummy,axis=0))
@@ -1139,72 +1179,99 @@ class Processor(pepper.ProcessorBasicPhysics):
         part_ak_non_none = ak.where(ak.is_none(part_ak,axis=1), part_dummy, part_ak)
         mom_ak_non_none = ak.where(ak.is_none(mom_ak,axis=1), part_dummy, mom_ak)
 
-        #np.apply_along_axis(np.setdiff1d(part_ak_non_none,mom_ak_non_none),1,mom_ak_non_none)
-        #np.apply_along_axis(np.setdiff1d,1,part_ak_non_none,[mom_ak_non_none,part_ak_non_none])
-        np.apply_along_axis(np.setdiff1d,1,part_ak_non_none,mom_ak_non_none)
-        #np.apply_along_axis(np.diff(part_ak_non_none,mom_ak_non_none),1,mom_ak_non_none)
+        #np.apply_along_axis(np.setdiff1d,1,ak.to_numpy(part_ak_non_none),[ak.to_numpy(mom_ak_non_none),ak.to_numpy(part_ak_non_none)])
+        np.apply_along_axis(np.setdiff1d,0,ak.to_numpy(part_ak_non_none),[ak.to_numpy(mom_ak_non_none),ak.to_numpy(part_ak_non_none)])
+
+        ngenpart_for_cumulative = ak.to_numpy(ak.num(selector.data["GenPart"],axis=1))
+        cumulative_ngenpart = np.cumsum(ngenpart_for_cumulative)
+        cumulative_ngenpart_shift = np.roll(cumulative_ngenpart, 1)
+        cumulative_ngenpart_shift[0] = 0
+        cumulative_ngenpart_ak = ak.from_numpy(cumulative_ngenpart_shift)
+
+        print("ngenpart_for_cumulative",ngenpart_for_cumulative)
+        print("cumulative_ngenpart_ak",cumulative_ngenpart_ak)
+
+        actual_part_index = self.cumulative_sum(cumulative_ngenpart_ak,part_index)
+        actual_mother_index = self.cumulative_sum(cumulative_ngenpart_ak,mother_index)
+        actual_last_index = np.setdiff1d(actual_part_index,actual_mother_index)
+        print("Part index after subtraction",actual_last_index)
+
+        actual_index_2d = (np.array([actual_last_index]* len(selector.data["GenPart"])))
+        unflatten_flag = ak.mask(ak.from_numpy(actual_index_2d),(actual_index_2d < cumulative_ngenpart[:, None]) & (actual_index_2d >= cumulative_ngenpart_shift[:, None]))
+        #
+        #index_unflatten_cts = ak.unflatten(ak.count(unflatten_flag,axis=1),1)
+        index_unflatten_cts = ak.count(unflatten_flag,axis=1)
+        '''
+        total_last_index = 0
+        
+        for i in range(len(selector.data["GenPart"])):
+            print()
+            print("Event number in unflatten_flag",i)
+            
+            print(unflatten_flag[i])
+            print(index_unflatten_cts[i])
+            total_last_index+=index_unflatten_cts[i]
+        '''
+
+        #Very important to mention that these two are the same, but not ideal to print the loops everytime
+        #print("Length of actual_last_index",len(actual_last_index))
+        #print("total_last_index",total_last_index)
+        actual_last_index_unflat = ak.unflatten(actual_last_index,index_unflatten_cts)
+        last_index = ak.unflatten(self.cumulative_sum([-1]*cumulative_ngenpart_ak,actual_last_index_unflat),index_unflatten_cts)
+        print("Length of last_index",len(last_index))
+        #hahaha
 
         for i in range(len(selector.data["Jet"])):
             print()
             print("Event number in new chain making",i)
             print(ak.to_numpy(selector.data["GenPart"][i]["pdgId"]))
             print("Part index",part_index[i])
-            print("Part mother index",mother[i])
+            print("Part mother index",mother_index[i])
             print("Part index padded with none",part_ak[i])
             print("Part mother index padded with none",mom_ak[i])
 
             print("Part index padded with -2",part_ak_non_none[i])
             print("Intersection for Part mother index padded with -2",mom_ak_non_none[i])
-            print("part_dummy",part_dummy[0])
-            #print("part_dummy_new",part_dummy_new[i])
-            #print(np.setdiff1d(part_ak_non_none[i],mom_ak_non_none[i]))
-            hahaha
-        
+            print("event wise set subtraction (only for comparison)",np.setdiff1d(part_index[i],mother_index[i]))
+            print("actual_last_index_unflat",actual_last_index_unflat[i])
+            print("last_index",last_index[i])
+        hahaha
+        #'''
         selector.data["b_fresh"], selector.data["b_fin_final"] = self.chain_full(5,data)
         #This was causing the script in debug mode to terminate, and really we do not need it, so it is commented out
         #selector.data["w_fresh"], selector.data["w_fin_final"] = self.chain_full(24,data)
-        selector.data["e_mu_tau_fresh"], selector.data["e_mu_tau_fin_final"] = self.lepton_chain_full([11,13,15],data)
-        selector.data["nu_fresh"], selector.data["nu_fin_final"] = self.lepton_chain_full([12,14,16],data)
+
+        selector.data["e_mu_tau_fresh"] = self.lepton_chain_full(0,[11,13,15],data)
+        selector.data["nu_fresh"] = self.lepton_chain_full(0,[12,14,16],data)
 
         data, min_delta_r, selector.data["bjet_part_dr"] = self.dR_bjet_chain_match(selector.data)
         b_mom_time_after = time.time()
         #print("Time taken with make_chain method",b_mom_time_after - b_mom_time_before)
 
-        b_mask = ak.mask(data,(ak.num(selector.data["bjets"].eta)>0)&(ak.num(selector.data["bjets"].matched_gen.eta)>0)) #So it should have reco pt and also matched gen pt
-        empty_b_array = [None]*len(selector.data["bjets"])
+        b_mask = ak.mask(data,(ak.num(selector.data["bjets_tight"].eta)>0)&(ak.num(selector.data["bjets_tight"].matched_gen.eta)>0)) #So it should have reco pt and also matched gen pt
+        empty_b_array = [None]*len(selector.data["bjets_tight"])
         #selector.data["non_b_mother_final"] = ak.where(ak.is_none(b_mask), empty_b_array, non_b_mother)
         selector.data["non_b_mother_final"] = ak.where(ak.is_none(b_mask), empty_b_array, min_delta_r)
 
         #==================Picking only resonant leptons for gen level first step of W reconstruction (two particle invariant mass only)=========================
 
-        e_mu_tau_first = selector.data["e_mu_tau_fin_final"][:,:,0]
-        e_mu_tau_mother_id = abs(selector.data["GenPart"][selector.data["GenPart"][e_mu_tau_first]["genPartIdxMother"]].pdgId)
-        selector.data["e_mu_tau_resonant"] = selector.data["e_mu_tau_fin_final"][e_mu_tau_mother_id == 24]
-
         e_mu_tau_fresh_mother_id = abs(selector.data["GenPart"][selector.data["GenPart"][selector.data["e_mu_tau_fresh"]]["genPartIdxMother"]].pdgId)
         selector.data["e_mu_tau_fresh_resonant"] = selector.data["e_mu_tau_fresh"][e_mu_tau_fresh_mother_id == 24]
-
-        selector.data["e_mu_tau_first_resonant"] = selector.data["e_mu_tau_resonant"][:,:,0]
-
-        w_last_e_mu_tau = selector.data["GenPart"][selector.data["e_mu_tau_first_resonant"]]["genPartIdxMother"]
-        
-        nu_first = selector.data["nu_fin_final"][:,:,0]
-        nu_mother_id = abs(selector.data["GenPart"][selector.data["GenPart"][nu_first]["genPartIdxMother"]].pdgId)
-        selector.data["nu_resonant"] = selector.data["nu_fin_final"][nu_mother_id == 24]
-        selector.data["nu_first_resonant"] = selector.data["nu_resonant"][:,:,0]
+        nu_fresh_mother_id = abs(selector.data["GenPart"][selector.data["GenPart"][selector.data["nu_fresh"]]["genPartIdxMother"]].pdgId)
+        selector.data["nu_fresh_resonant"] = selector.data["nu_fresh"][nu_fresh_mother_id == 24]
 
         #one_fresh_gen_lepton_mask = self.one_fresh_gen_lepton(is_mc, selector.data)
         selector.add_cut("HasOneGenLepton", partial(self.one_fresh_gen_lepton, is_mc), no_callback=True)
 
-        #w_mother_object = selector.data["GenPart"][selector.data["GenPart"][selector.data["e_mu_tau_resonant"][:,:,0]]["genPartIdxMother"]]
         w_mother_object_fresh = selector.data["GenPart"][selector.data["GenPart"][selector.data["e_mu_tau_fresh_resonant"]]["genPartIdxMother"]]
-        w_mother_object = selector.data["GenPart"][selector.data["GenPart"][selector.data["e_mu_tau_first_resonant"]]["genPartIdxMother"]]
+        #w_mother_object = selector.data["GenPart"][selector.data["GenPart"][selector.data["e_mu_tau_first_resonant"]]["genPartIdxMother"]]
 
         #==========================================================================================================================================================
 
         final_array = [[]]*len(selector.data["Jet"])
         selector.data["Gen_emutau"], selector.data["Gen_emutau_mask"], lep_muon_mass_mask = self.build_genpart_column(is_mc, selector.data["e_mu_tau_fresh_resonant"], selector.data)
-        selector.data["Gen_nu"], selector.data["Gen_nu_mask"], nu_muon_mass_mask = self.build_genpart_column(is_mc, selector.data["nu_first_resonant"], selector.data)
+        #selector.data["Gen_nu"], selector.data["Gen_nu_mask"], nu_muon_mass_mask = self.build_genpart_column(is_mc, selector.data["nu_first_resonant"], selector.data)
+        selector.data["Gen_nu"], selector.data["Gen_nu_mask"], nu_muon_mass_mask = self.build_genpart_column(is_mc, selector.data["nu_fresh_resonant"], selector.data)
         selector.data["W_mass"] = (selector.data["Gen_emutau"][:,0] + selector.data["Gen_nu"][:,0]).mass
 
         lnu_none_mask = ak.is_none(selector.data["Gen_emutau_mask"])|ak.is_none(selector.data["Gen_nu_mask"])
@@ -1234,10 +1301,6 @@ class Processor(pepper.ProcessorBasicPhysics):
         for i in range(len(selector.data["Jet"])):
             print()
             print("Event number in build_genpart_column function",i)
-            print("Pdg id of leptons",selector.data["GenPart"][selector.data["e_mu_tau_first_resonant"]].pdgId[i])
-            print("Checking whether the mother is indeed W",w_mother_object.pdgId[i])
-            print("Number of leptons that supposedly have a W mother",len(w_mother_object.pdgId[i]))
-
             print("Pdg id of fresh leptons",selector.data["GenPart"][selector.data["e_mu_tau_fresh_resonant"]].pdgId[i])
             print("Checking whether the fresh mother is indeed W",w_mother_object_fresh.pdgId[i])
             print("Number of fresh leptons that supposedly have a W mother",len(w_mother_object_fresh.pdgId[i]))
@@ -1415,47 +1478,6 @@ class Processor(pepper.ProcessorBasicPhysics):
         zero_discr = [0]*len(selector.data["Jet"])
         selector.data["Gen_nu_pz"] = selector.data["Gen_nu"].pt[:,0]*np.sinh(selector.data["Gen_nu"].eta[:,0])
 
-        '''
-        xi_indpt_w_met = ak.unflatten(selector.data["Gen_emutau"].pt[:,0]*selector.data["GenMET"].pt*np.cos(selector.data["GenMET"].phi-selector.data["Gen_emutau"].phi[:,0]),1)
-        #Just for comparison (at time of debugging)
-        xi_indpt_w_lnu = ak.unflatten(selector.data["Gen_emutau"].pt[:,0]*selector.data["Gen_nu"].pt[:,0]*np.cos(selector.data["Gen_nu"].phi[:,0]-selector.data["Gen_emutau"].phi[:,0]),1)
-
-        xi_met_sum = ak.concatenate([xi_indpt_w_met,mw_arr],axis=1)
-        xi_lnu_sum = ak.concatenate([xi_indpt_w_lnu,mw_arr],axis=1)
-
-        xi_lnu = ak.sum(xi_lnu_sum,axis=1)
-
-        xi_met = ak.sum(xi_met_sum,axis=1)
-        mt_l_2 = (pow(selector.data["Gen_emutau"].pt[:,0],2) + pow(selector.data["Gen_emutau"].mass[:,0],2))
-        Gen_emutau_energy = np.sqrt(pow((selector.data["Gen_emutau"].pt[:,0]*np.cosh(selector.data["Gen_emutau"].eta[:,0])),2) + pow(selector.data["Gen_emutau"].mass[:,0],2))
-        Gen_emutau_pz = selector.data["Gen_emutau"].pt[:,0]*np.sinh(selector.data["Gen_emutau"].eta[:,0])
-
-        discr = pow(xi_met,2) - pow(selector.data["GenMET"].pt,2)*mt_l_2
-        discr_sign = discr/abs(discr)
-        selector.data["neg_discr_mask"] = ak.mask(discr,discr<0)
-        neg_discr_num = ak.count(selector.data["neg_discr_mask"], axis=0)        
-        print("neg_discr_num",neg_discr_num)
-
-        #zero_discr = [[0]]*len(selector.data["Jet"])
-        discr_new = ak.where(ak.is_none(selector.data["neg_discr_mask"]), discr, zero_discr) #Populating this before finding the sqrt obviously
-
-        selector.data["min_pz_met"] = ((xi_met*Gen_emutau_pz) - (Gen_emutau_energy*np.sqrt(discr_new)))/mt_l_2
-        selector.data["max_pz_met"] = ((xi_met*Gen_emutau_pz) + (Gen_emutau_energy*np.sqrt(discr_new)))/mt_l_2
-
-        #Substitute in the equation, check LHS-RHS (probably better than putting a mask on LHS==RHS?)
-        lhs_pz_min = Gen_emutau_energy*np.sqrt(pow(selector.data["GenMET"].pt,2) + pow(selector.data["min_pz_met"],2))
-        lhs_pz_max = Gen_emutau_energy*np.sqrt(pow(selector.data["GenMET"].pt,2) + pow(selector.data["max_pz_met"],2))
-
-        rhs_pz_min = Gen_emutau_pz*selector.data["min_pz_met"] + xi_met
-        rhs_pz_max = Gen_emutau_pz*selector.data["max_pz_met"] + xi_met
-
-        selector.data["GenMET_nu_min"] = self.build_met_eta_column(is_mc, "min_pz_met", "GenMET", selector.data)
-        selector.data["GenMET_nu_max"] = self.build_met_eta_column(is_mc, "max_pz_met", "GenMET", selector.data)
-
-        selector.data["b_lMET_min_mass"] = (selector.data["Gen_b"][:,0] + selector.data["Gen_emutau"][:,0] + selector.data["GenMET_nu_min"]).mass
-        selector.data["b_lMET_max_mass"] = (selector.data["Gen_b"][:,0] + selector.data["Gen_emutau"][:,0] + selector.data["GenMET_nu_max"]).mass
-        '''
-
         xi_indpt_w_recmet = ak.unflatten(selector.data["Lepton"].pt[:,0]*selector.data["MET"].pt*np.cos(selector.data["MET"].phi-selector.data["Lepton"].phi[:,0]),1)
         xi_recmet_sum = ak.concatenate([xi_indpt_w_recmet,mw_arr],axis=1)
         xi_recmet = ak.sum(xi_recmet_sum,axis=1)
@@ -1479,7 +1501,7 @@ class Processor(pepper.ProcessorBasicPhysics):
         selector.data["MET_nu_min"] = self.build_met_eta_column(is_mc, "min_pz_recmet", "MET", selector.data)
         selector.data["MET_nu_max"] = self.build_met_eta_column(is_mc, "max_pz_recmet", "MET", selector.data)
 
-        selector.data["Rec_bjets"], selector.data["bjet_mask"] = self.build_lead_bjet_column(is_mc, "bjets", selector.data)
+        selector.data["Rec_bjets"], selector.data["bjet_mask"] = self.build_lead_bjet_column(is_mc, "bjets_tight", selector.data)
         selector.data["b_l_recMET_min_mass"] = (selector.data["Rec_bjets"][:,0] + selector.data["Lepton"][:,0] + selector.data["MET_nu_min"]).mass
         selector.data["b_l_recMET_max_mass"] = (selector.data["Rec_bjets"][:,0] + selector.data["Lepton"][:,0] + selector.data["MET_nu_max"]).mass
 
@@ -1523,6 +1545,11 @@ class Processor(pepper.ProcessorBasicPhysics):
             print("MET_nu_max phi",selector.data["MET_nu_max"][i]["phi"])
             print("MET_nu_max eta",selector.data["MET_nu_max"][i]["eta"])
             print("MET_nu_max mass",selector.data["MET_nu_max"][i]["mass"])
+
+            print("min_pz_recmet",selector.data["min_pz_recmet"][i])
+            print("max_pz_recmet",selector.data["max_pz_recmet"][i])
+
+            print("gen nu pz",selector.data["Gen_nu_pz"][i])
 
             print("b_l_recMET_min_mass",selector.data["b_l_recMET_min_mass"][i])
             print("b_l_recMET_max_mass",selector.data["b_l_recMET_max_mass"][i])
@@ -1580,9 +1607,18 @@ class Processor(pepper.ProcessorBasicPhysics):
         selector.set_multiple_columns(partial(self.daughter_categories,is_mc))
         '''
 
+        '''
+        btag_veto_dict = ["b_loose_0","b_loose_1+_no_effect","b_loose_1+_leading_inconclusive_50","b_loose_1+_leading_conclusive_50_wrong","b_loose_1+_leading_conclusive_50_right"]
+        selector.set_cat("btag_veto_cat", set(btag_veto_dict))
+        selector.set_multiple_columns(partial(self.btag_veto_cats,is_mc))
+        '''
+
+        #Removing this since we probably do not need this for other variables and it is taking a lot of time to fill the cutflow
+        '''
         pz_dict = ["complex", "real"]
         selector.set_cat("pz_cat", set(pz_dict))
         selector.set_multiple_columns(partial(self.pz_categories,is_mc))
+        '''
         #hahaha
 
         #selector.data["resonant_b_pt"] = daughter_top[abs(daughter_top.pdgId) == 5].pt
@@ -1621,7 +1657,7 @@ class Processor(pepper.ProcessorBasicPhysics):
             print("B0",selector.data["prob_zero"][i])
             print("B+",selector.data["prob_pos"][i])
 
-            print("B jet pt",selector.data["bjets"][i]["pt"])
+            print("B jet pt",selector.data["bjets_tight"][i]["pt"])
             #print("b particle mother indices?",selector.data[abs(selector.data["GenPart"].pdgId) == 5]["GenPart"][i]["genPartIdxMother"])
             print("b particle mother indices?",selector.data["GenPart"][abs(selector.data["GenPart"].pdgId) == 5][i].genPartIdxMother)
             print("b particle pt?",selector.data["GenPart"][abs(selector.data["GenPart"].pdgId) == 5][i].pt)
@@ -1644,7 +1680,7 @@ class Processor(pepper.ProcessorBasicPhysics):
             print("Final lepton mothers outside the recursion function",selector.data["lep_mother_final"].pdgId[i])
             #print("Lepton mother particle pdg id",selector.data["Lepton"][i].pt)
 
-            print("Bjet Matching gen pt",selector.data["bjets"][i].matched_gen.pt) #This is kept as a control because it is unchanged by any scale/correction factor
+            print("Bjet Matching gen pt",selector.data["bjets_tight"][i].matched_gen.pt) #This is kept as a control because it is unchanged by any scale/correction factor
             b_bbar_object = selector.data["GenPart"][(abs(selector.data["GenPart"].pdgId)==5)]
 
             print("B gen particles pt",b_bbar_object[i].pt)
@@ -1657,18 +1693,22 @@ class Processor(pepper.ProcessorBasicPhysics):
             #print("Number of total b mother particles",ak.num(selector.data["non_b_mother_final"],axis=1))[i]
 
             print("Dr between chosen leading lepton and b jet",selector.data["dR_lb"][i])
+            print("Dphi between chosen leading lepton and b jet",selector.data["dphi_lb"][i])
+            print("Leading B jet eta",selector.data["abs_eta_b"][i])
+            
             print("Invariant mass of chosen leading lepton and b jet (never equal to top mass due to MET)",selector.data["mlb"][i])
+
             print("Top pt (to potentially check correlation with dR_lb)",selector.data["GenPart"][(abs(selector.data["GenPart"].pdgId)==6)][i]["pt"])
             print("Max pt of top",selector.data["top_max_pt"][i])
             #print("Net charge of chosen leading lepton and b jet",selector.data["q_net"][i])
 
-            print("Bjet meson tag reshaped",selector.data["meson_tag_real"][i])
-            print("Bjet gen meson tag",selector.data["gen_meson_real"][i])
+            print("Bjet meson tag reshaped",selector.data["meson_tag_real_tight"][i])
+            print("Bjet gen meson tag",selector.data["gen_meson_real_tight"][i])
             print("Real Probability values")
-            print("B-",selector.data["prob_neg_real"][i])
-            print("B0bar",selector.data["prob_zerobar_real"][i])
-            print("B0",selector.data["prob_zero_real"][i])
-            print("B+",selector.data["prob_pos_real"][i])
+            print("B-",selector.data["prob_neg_real_tight"][i])
+            print("B0bar",selector.data["prob_zerobar_real_tight"][i])
+            print("B0",selector.data["prob_zero_real_tight"][i])
+            print("B+",selector.data["prob_pos_real_tight"][i])
 
             print("Hadron id of all jets?",jetorigin["bHadronId"][i]) 
 
@@ -1716,10 +1756,15 @@ class Processor(pepper.ProcessorBasicPhysics):
                 for key in cat_dict:
                     print(key,selector.data[key][i])
 
+                print("Values of b veto masks")
+                for key in btag_veto_dict:
+                    print(key,selector.data[key][i])
+
+                
                 print("Mask categories based on sign of discriminant")
                 for key in pz_dict:
                     print(key,selector.data[key][i])     
-
+                
                 #hahaha            
 
                 #print("Inconclusive events",selector.data["inconclusive"][i])
@@ -2022,8 +2067,8 @@ class Processor(pepper.ProcessorBasicPhysics):
             cats["no_bjet"][i] = no_b_cut[i]
 
             if subleading_cut[i]:
-                abs_eta_l = abs(data["bjets"][i][0].eta)
-                abs_eta_sl = abs(data["bjets"][i][1].eta)
+                abs_eta_l = abs(data["bjets_tight"][i][0].eta)
+                abs_eta_sl = abs(data["bjets_tight"][i][1].eta)
 
                 #print("Jet etas",abs_eta_l,abs_eta_sl)
                 #print("Entry number", i, ": two or more b jets",len(data["bjets_gen"][i].eta) > 1)
@@ -2037,7 +2082,7 @@ class Processor(pepper.ProcessorBasicPhysics):
                 cats["l_fwd_sl_fwd"][i] = (abs_eta_l >= fwd_cut) & (abs_eta_sl >= fwd_cut)
 
             if leading_cut[i]:
-                abs_eta_l = abs(data["bjets"][i][0].eta)
+                abs_eta_l = abs(data["bjets_tight"][i][0].eta)
 
                 cats["l_be"][i] = abs_eta_l < fwd_cut
                 cats["l_fwd"][i] = abs_eta_l >= fwd_cut
@@ -2064,11 +2109,11 @@ class Processor(pepper.ProcessorBasicPhysics):
         cats = {}
 
         #===============================================Jan 3 2025 removed to reduce timing============================================================
-        #cats["no_b_jet"] = (ak.num(data["bjets"].eta) == 0) & (ak.num(data["Jet"]) >= 2)
+        #cats["no_b_jet"] = (ak.num(data["bjets_tight"].eta) == 0) & (ak.num(data["Jet"]) >= 2)
         #=============================================================================================================================================
 
-        leading_cut = ak.mask(data,(ak.num(data["bjets"].eta)>=1) & (ak.num(data["Jet"]) >= 2))
-        subleading_cut = ak.mask(data,(ak.num(data["bjets"].eta)>=2) & (ak.num(data["Jet"]) >= 2))
+        leading_cut = ak.mask(data,(ak.num(data["bjets_tight"].eta)>=1) & (ak.num(data["Jet"]) >= 2))
+        subleading_cut = ak.mask(data,(ak.num(data["bjets_tight"].eta)>=2) & (ak.num(data["Jet"]) >= 2))
 
         #b_match = (id_flag) & (reco_b_flag) #not needed since bjets column already contains all that
 
@@ -2077,24 +2122,24 @@ class Processor(pepper.ProcessorBasicPhysics):
 
         #rec_meson = ak.argmax(data["NN_prob"],axis=1)
         #This is the meson type chosen from the probabilities from the nn evaluation, and is a 1 entry per jet awkward array
-        cut_array = [False] * len(data["bjets"]) 
+        cut_array = [False] * len(data["bjets_tight"]) 
 
-        hadron_id_net = ak.to_numpy(ak.unflatten(hadron_id* len(data["bjets"]),4))
+        hadron_id_net = ak.to_numpy(ak.unflatten(hadron_id* len(data["bjets_tight"]),4))
 
         #print("Length of hadron id mask",len(hadron_id_net))
 
         #================All this is copied from the gen code proc_wbwb_debug================================
-        #no_b_mask = ak.mask(data,(ak.num(data["bjets"].eta) > 0) & (ak.num(data["Jet"]) >= 2))
+        #no_b_mask = ak.mask(data,(ak.num(data["bjets_tight"].eta) > 0) & (ak.num(data["Jet"]) >= 2))
 
-        #default_array = np.zeros((len(data["bjets"]), 2)) #2 since we could have subleading jets too
+        #default_array = np.zeros((len(data["bjets_tight"]), 2)) #2 since we could have subleading jets too
 
-        #data_gen_meson = ak.where(ak.is_none(no_b_mask), default_array, data["gen_meson_real"])
-        #data_meson_tag = ak.where(ak.is_none(no_b_mask), default_array, data["meson_tag_real"])
+        #data_gen_meson = ak.where(ak.is_none(no_b_mask), default_array, data["gen_meson_real_tight"])
+        #data_meson_tag = ak.where(ak.is_none(no_b_mask), default_array, data["meson_tag_real_tight"])
 
         #Using this instead of the above (this was also used for reshaping the arrays for the max number of constituents of the jets)
-        data_gen_meson = ak.pad_none(data["gen_meson_real"], 2, clip=True)
+        data_gen_meson = ak.pad_none(data["gen_meson_real_tight"], 2, clip=True)
         data_gen_meson = ak.fill_none(data_gen_meson, 0)
-        data_meson_tag = ak.pad_none(data["meson_tag_real"], 2, clip=True)
+        data_meson_tag = ak.pad_none(data["meson_tag_real_tight"], 2, clip=True)
         data_meson_tag = ak.fill_none(data_meson_tag, 0)
 
         #=====================================================================================================
@@ -2155,22 +2200,22 @@ class Processor(pepper.ProcessorBasicPhysics):
         #threshold_list = [0.025,0.05,0.075,0.1,0.15,0.2,0.3,0.4,0.5,0.6,0.7,0.8] #New threshold list for completing the roc curve
 
         threshold_list = [0.5] #Guess threshold applied
-        leading_cut = ak.mask(data,(ak.num(data["bjets"].eta)>=1) & (ak.num(data["Jet"]) >= 2))
+        leading_cut = ak.mask(data,(ak.num(data["bjets_tight"].eta)>=1) & (ak.num(data["Jet"]) >= 2))
 
-        data_meson_tag = ak.pad_none(data["meson_tag_real"], 2, clip=True)
+        data_meson_tag = ak.pad_none(data["meson_tag_real_tight"], 2, clip=True)
         data_meson_tag = ak.fill_none(data_meson_tag, 0)
 
         prob = ["prob_neg","prob_zerobar","prob_zero","prob_pos"]
-        data_prob_neg = ak.pad_none(data["prob_neg_real"], 2, clip=True)
+        data_prob_neg = ak.pad_none(data["prob_neg_real_tight"], 2, clip=True)
         data_prob_neg = ak.fill_none(data_prob_neg, 0)
 
-        data_prob_zerobar = ak.pad_none(data["prob_zerobar_real"], 2, clip=True)
+        data_prob_zerobar = ak.pad_none(data["prob_zerobar_real_tight"], 2, clip=True)
         data_prob_zerobar = ak.fill_none(data_prob_zerobar, 0)
 
-        data_prob_zero = ak.pad_none(data["prob_zero_real"], 2, clip=True)
+        data_prob_zero = ak.pad_none(data["prob_zero_real_tight"], 2, clip=True)
         data_prob_zero = ak.fill_none(data_prob_zero, 0)
 
-        data_prob_pos = ak.pad_none(data["prob_pos_real"], 2, clip=True)
+        data_prob_pos = ak.pad_none(data["prob_pos_real_tight"], 2, clip=True)
         data_prob_pos = ak.fill_none(data_prob_pos, 0)
 
         #Since even the no bjet events have been padded with zeros, this condition will automatically hold for them too, irrespective of whether it is used or not
@@ -2184,8 +2229,8 @@ class Processor(pepper.ProcessorBasicPhysics):
             inconclusive_mask = (neg_mask) & (zerobar_mask) & (zero_mask) & (pos_mask)
             conclusive_mask = ~((neg_mask) & (zerobar_mask) & (zero_mask) & (pos_mask))
 
-            cut_array_incon = [True] * len(data["bjets"]) 
-            cut_array_con = [False] * len(data["bjets"]) 
+            cut_array_incon = [True] * len(data["bjets_tight"]) 
+            cut_array_con = [False] * len(data["bjets_tight"]) 
             cats["inconclusive_"+str(int(score_lowlim*100))] = ak.where(ak.is_none(leading_cut), cut_array_incon, inconclusive_mask)
             cats["conclusive_"+str(int(score_lowlim*100))] = ak.where(ak.is_none(leading_cut), cut_array_con, conclusive_mask)
 
@@ -2371,7 +2416,7 @@ class Processor(pepper.ProcessorBasicPhysics):
             print("top_num",top_num[i])
             print("antitop_num",antitop_num[i])
             print("no_mask",cats["no_mask"][i])
-            print("Bjet pt",data["bjets"][i].pt)
+            print("Bjet pt",data["bjets_tight"][i].pt)
 
             print("Top onshell Mask values")
             print("top_b_w_l_w",cats["top_b_w_l_w"][i])
@@ -2392,7 +2437,131 @@ class Processor(pepper.ProcessorBasicPhysics):
         
         return cats
 
+    def btag_veto_cats(self,is_mc,data):
+        cats = {}
+        #Based on this parameter (roughly) the categories have already been made
+        #This is not the number of tight bjets, but the number of 'correct' tight bjets
+        tight_jets = ak.num(data["bjets_tight"],axis=1)
+        loose_jets = ak.num(data["bjets_loose"])
 
+        #This is purely for pt comparison, to see whether the loose bjet has a higher pt than this
+        leading_cut_tight = ak.mask(data,(ak.num(data["bjets_tight"].eta)>=1) & (ak.num(data["Jet"]) >= 2))
+        data_bjet_pt_tight = ak.pad_none(data["bjets_tight"]["pt"], 1, clip=True)
+        data_bjet_pt_tight = ak.fill_none(data_bjet_pt_tight, 0)
+
+        #============================should really have made a function for this=====================================================
+
+        #threshold_list = [0.5] #Guess threshold applied
+        score_lowlim = 0.5 #Guess threshold applied
+        leading_cut_loose = ak.mask(data,(ak.num(data["bjets_loose"].eta)>=1) & (ak.num(data["Jet"]) >= 2))
+        data_bjet_pt_loose = ak.pad_none(data["bjets_loose"]["pt"], 1, clip=True)
+        data_bjet_pt_loose = ak.fill_none(data_bjet_pt_loose, 0)
+
+        data_meson_tag = ak.pad_none(data["meson_tag_real_loose"], 2, clip=True)
+        data_meson_tag = ak.fill_none(data_meson_tag, 0)
+
+        prob = ["prob_neg","prob_zerobar","prob_zero","prob_pos"]
+        data_prob_neg = ak.pad_none(data["prob_neg_real_loose"], 2, clip=True)
+        data_prob_neg = ak.fill_none(data_prob_neg, 0)
+
+        data_prob_zerobar = ak.pad_none(data["prob_zerobar_real_loose"], 2, clip=True)
+        data_prob_zerobar = ak.fill_none(data_prob_zerobar, 0)
+
+        data_prob_zero = ak.pad_none(data["prob_zero_real_loose"], 2, clip=True)
+        data_prob_zero = ak.fill_none(data_prob_zero, 0)
+
+        data_prob_pos = ak.pad_none(data["prob_pos_real_loose"], 2, clip=True)
+        data_prob_pos = ak.fill_none(data_prob_pos, 0)
+
+        #Since even the no bjet events have been padded with zeros, this condition will automatically hold for them too, irrespective of whether it is used or not
+        #Checking all scores because it seems easier than checking where the max score is and comparing only that
+        neg_mask = data_prob_neg[:,0] <= score_lowlim
+        zerobar_mask = data_prob_zerobar[:,0] <= score_lowlim
+        zero_mask = data_prob_zero[:,0] <= score_lowlim
+        pos_mask = data_prob_pos[:,0] <= score_lowlim
+
+        inconclusive_mask = (neg_mask) & (zerobar_mask) & (zero_mask) & (pos_mask)
+        conclusive_mask = ~((neg_mask) & (zerobar_mask) & (zero_mask) & (pos_mask))
+
+        #============================================================================================================================================
+
+        #============================================================================================================================================
+
+        meson_cat = ["bneg","b0bar","b0","bpos"]
+        hadron_id = [-521, -511, 511, 521]
+
+        #rec_meson = ak.argmax(data["NN_prob"],axis=1)
+        #This is the meson type chosen from the probabilities from the nn evaluation, and is a 1 entry per jet awkward array
+
+        hadron_id_net = ak.to_numpy(ak.unflatten(hadron_id* len(data["bjets_loose"]),4))
+
+        #print("Length of hadron id mask",len(hadron_id_net))
+
+        #================All this is copied from the gen code proc_wbwb_debug================================
+        #no_b_mask = ak.mask(data,(ak.num(data["bjets_loose"].eta) > 0) & (ak.num(data["Jet"]) >= 2))
+
+        #default_array = np.zeros((len(data["bjets_loose"]), 2)) #2 since we could have subleading jets too
+
+        #data_gen_meson = ak.where(ak.is_none(no_b_mask), default_array, data["gen_meson_real_loose"])
+        #data_meson_tag = ak.where(ak.is_none(no_b_mask), default_array, data["meson_tag_real_loose"])
+
+        #Using this instead of the above (this was also used for reshaping the arrays for the max number of constituents of the jets)
+        data_gen_meson = ak.pad_none(data["gen_meson_real_loose"], 2, clip=True)
+        data_gen_meson = ak.fill_none(data_gen_meson, 0)
+        data_meson_tag = ak.pad_none(data["meson_tag_real_loose"], 2, clip=True)
+        data_meson_tag = ak.fill_none(data_meson_tag, 0)
+
+        #=============================================================================================================================================
+        cut_array = [False] * len(data["bjets_loose"]) 
+        match_charge_cut = (data["id_bpos_rec_bpos"]==1)|(data["id_bneg_rec_bneg"]==1)
+        opposite_charge_mask = ((data["id_bpos_rec_bpos"]==1) & (data_gen_meson[:,0] == hadron_id[0]) & (data_meson_tag[:,0] == 0)) | ((data["id_bneg_rec_bneg"]==1) & (data_gen_meson[:,0] == hadron_id[3]) & (data_meson_tag[:,0] == 3))
+
+        #'''
+        cats["b_loose_0"] = (loose_jets==0)
+        cats["b_loose_1+_no_effect"] = (loose_jets>=1) & (data_bjet_pt_loose[:,0] <= data_bjet_pt_tight[:,0])
+        cats["b_loose_1+_leading_inconclusive_50"] = (loose_jets>=1) & (data_bjet_pt_loose[:,0] > data_bjet_pt_tight[:,0]) & inconclusive_mask
+        #'''
+        cats["b_loose_1+_leading_conclusive_50_wrong"] = (loose_jets>=1) & (data_bjet_pt_loose[:,0] > data_bjet_pt_tight[:,0]) & conclusive_mask & ~opposite_charge_mask
+        cats["b_loose_1+_leading_conclusive_50_right"] = (loose_jets>=1) & (data_bjet_pt_loose[:,0] > data_bjet_pt_tight[:,0]) & conclusive_mask & opposite_charge_mask
+        #'''
+        '''
+        for i in range(len(data["Jet"])):
+            print()
+            print("Event number in btag_veto_cats",i)
+            print("Jet pt",data["Jet"][i]["pt"])
+            print("Btag flavor overall scores",data["Jet"][i]["btag"])
+
+            print("tight_jets",tight_jets[i])
+            #print("loose_jets",loose_jets[i])
+            print("data_bjet_pt_tight",data_bjet_pt_tight[i])
+            print("Real Probability values")
+            print("B-",data["prob_neg_real_tight"][i])
+            print("B0bar",data["prob_zerobar_real_tight"][i])
+            print("B0",data["prob_zero_real_tight"][i])
+            print("B+",data["prob_pos_real_tight"][i])
+
+            print("data_bjet_pt_loose",data_bjet_pt_loose[i])
+            print("Real loose Probability values")
+            print("B-",data["prob_neg_real_loose"][i])
+            print("B0bar",data["prob_zerobar_real_loose"][i])
+            print("B0",data["prob_zero_real_loose"][i])
+            print("B+",data["prob_pos_real_loose"][i])          
+
+            print("id_bpos_rec_bpos",data["id_bpos_rec_bpos"][i])
+            print("id_bneg_rec_bneg",data["id_bneg_rec_bneg"][i])
+
+            print("inconclusive_mask",inconclusive_mask[i])
+            print("conclusive_mask",conclusive_mask[i])
+            print("opposite_charge_mask",opposite_charge_mask[i])
+
+            print("b_loose_0",cats["b_loose_0"][i])
+            print("b_loose_1+_no_effect",cats["b_loose_1+_no_effect"][i])
+            print("b_loose_1+_leading_inconclusive_50",cats["b_loose_1+_leading_inconclusive_50"][i])
+            print("b_loose_1+_leading_conclusive_50_wrong",cats["b_loose_1+_leading_conclusive_50_wrong"][i])
+            print("b_loose_1+_leading_conclusive_50_right",cats["b_loose_1+_leading_conclusive_50_right"][i])
+        '''
+
+        return cats
 
     def btag_sf(self, is_mc, data):
         """Apply btag scale factors."""
@@ -2530,11 +2699,11 @@ class Processor(pepper.ProcessorBasicPhysics):
         """Return dR between lepton and leading b jet."""
 
         dr_mask = ak.mask(data,ak.num(data[b_col].eta)>0)
-        #print("Size of events satisfying the mask (having bjets)",len(dr_mask))
 
         #of course lengths of l_col and b_col are supposed to be the same, that is why they are used interchangeably
         default_array = np.zeros((len(data[b_col]), 2))
-        empty_array = [None]*len(data[l_col])
+        #empty_array = [None]*len(data[l_col])
+        empty_array = [[]]*len(data[l_col])
         #Since this is being calculated after the at least one lepton cut is put, there is no need to ensure whether the lepton exists or not
 
         data_bjet_pt = ak.where(ak.is_none(dr_mask), default_array, data[b_col].pt)
@@ -2545,23 +2714,11 @@ class Processor(pepper.ProcessorBasicPhysics):
         dr_dummy_old = np.sqrt(pow(data[l_col].eta[:,0]-data_bjet_eta[:,0],2) + pow(data[l_col].phi[:,0]-data_bjet_phi[:,0],2))
 
         pi = 4*math.atan(1)
-        #print("value of pi",pi)
-
         #This is added because of the error found at the time of the mother correction script - this is not working directly, so flatten, compute and apply the mask, and then unflatten
         delta_phi = abs(data[l_col].phi[:,0]-data_bjet_phi[:,0])
-        #delta_phi_flat = ak.flatten(delta_phi)
-        #print("Number of b quarks in all events (after flattening)",len(delta_phi_flat))
-        #pi_array = [2*pi]*len(delta_phi_flat)
         pi_array = [2*pi]*len(data)
 
-        #large_phi_mask = ak.mask(delta_phi_flat,delta_phi_flat>pi)
         large_phi_mask = ak.mask(delta_phi,delta_phi>pi)
-        #large_phi_mask = ak.mask(delta_phi_flat,delta_phi_flat>2) #Different lower limit for debugging
-        #delta_phi_new = ak.where(ak.is_none(large_phi_mask), delta_phi_flat, pi_array-delta_phi_flat)
-        
-        #delta_phi_new = ak.where(ak.is_none(large_phi_mask), delta_phi, pi_array-delta_phi)
-        #delta_phi_final = ak.unflatten(delta_phi_new,ak.num(data_bpart_phi,axis=1))
-
         delta_phi_final = ak.where(ak.is_none(large_phi_mask), delta_phi, pi_array-delta_phi)
 
         #Only for debugging
@@ -2581,33 +2738,82 @@ class Processor(pepper.ProcessorBasicPhysics):
             print("Absolute value of unadjusted delta phi",abs(data[l_col].phi[:,0][i]-data_bjet_phi[:,0][i]))
             #print("Adjusted value of delta phi",delta_phi[i])
             #print("Number of b quarks in event (counts for unflattening delta_phi_new)",ak.num(data_bpart_phi,axis=1)[i])
-            print("Adjusted value of delta phi after flattening, applying mask and unflattening",delta_phi_final[i])
+            print("Adjusted value of delta phi after flattening, applying mask and unflattening (delta_phi_final)",delta_phi_final[i])
             #Only for debugging
             #print("Values of delta phi greater than pi",count_pi[i])
-
+            print("dr_final",dr_final[i])
             #Comparing with delta_r from the vector.py
             if (len(data[b_col][i])>0):
                 dR_function = data[l_col][i][0].delta_r(data[b_col][i][0])
                 print("dR dummy adjusted",dr_dummy[i])
                 print("dR function",dR_function)
-
-            #hahaha
+           
         '''    
-        '''
-        dr = [0]*len(data[l_col])
-        have_bjets = ak.where(ak.num(data[b_col].eta)>0)
-        #have_lepton = ak.where(ak.num(data[b_col].eta)>0) #This is required especially for data, because the exact one lepton cut is applied for gen only
-        #print("Events having bjets",have_bjets)
-        for i in range(len(have_bjets)):
-            for j in range(len(have_bjets[i])): #Weird syntax, i is also an array somehow, so have to do this
-                #print("Entry number",have_bjets[i][j])
-                #print("Lepton object",data[l_col][have_bjets[i][j], 0])
-                dr[have_bjets[i][j]] = (data[l_col][have_bjets[i][j], 0] + data[b_col][have_bjets[i][j], 0]).delta_r
-                dr[have_bjets[i][j]] = data[b_col][have_bjets[i][j], 0].delta_r(data[l_col][have_bjets[i][j], 0])
-                #print("Invariant mass excluding MET",dr[have_bjets[i][j]])
-
-        '''        
         return dr_final
+
+    def dphi_lepton_bjet(self, l_col, b_col, data):
+        """Return dphi between lepton and leading b jet."""
+
+        dr_mask = ak.mask(data,ak.num(data[b_col].eta)>0)
+        #print("Size of events satisfying the mask (having bjets)",len(dr_mask))
+
+        #of course lengths of l_col and b_col are supposed to be the same, that is why they are used interchangeably
+        default_array = np.zeros((len(data[b_col]), 2))
+        #empty_array = [None]*len(data[l_col])
+        empty_array = [[]]*len(data[l_col])
+        #Since this is being calculated after the at least one lepton cut is put, there is no need to ensure whether the lepton exists or not
+
+        data_bjet_phi = ak.where(ak.is_none(dr_mask), default_array, data[b_col].phi)
+
+        pi = 4*math.atan(1)
+        #print("value of pi",pi)
+
+        #This is added because of the error found at the time of the mother correction script - this is not working directly, so flatten, compute and apply the mask, and then unflatten
+        delta_phi = abs(data[l_col].phi[:,0]-data_bjet_phi[:,0])
+        pi_array = [2*pi]*len(data)
+
+        large_phi_mask = ak.mask(delta_phi,delta_phi>pi)
+        delta_phi_new = ak.where(ak.is_none(large_phi_mask), delta_phi, pi_array-delta_phi)
+        delta_phi_final = ak.where(ak.is_none(dr_mask), empty_array, delta_phi_new)
+
+        '''
+        for i in range(len(data["Jet"])):
+            print()
+            print("Event number in dphi_lepton_bjet",i)
+            print("Leading B jet pt",data[b_col][i].pt)
+
+            print("Wrong phi (not adjusted for greater than pi values)",data[l_col].phi[:,0][i]-data_bjet_phi[:,0][i])
+            print("Absolute value of unadjusted delta phi",abs(data[l_col].phi[:,0][i]-data_bjet_phi[:,0][i]))
+            print("Adjusted value of delta phi after flattening, applying mask and unflattening (delta_phi_new)",delta_phi_new[i])
+            print("delta_phi_final",delta_phi_final[i])
+        '''
+        #hahaha
+        return delta_phi_final
+
+    def eta_leading_bjet(self, b_col, data):
+        dr_mask = ak.mask(data,ak.num(data[b_col].eta)>0)
+        #print("Size of events satisfying the mask (having bjets)",len(dr_mask))
+
+        #of course lengths of l_col and b_col are supposed to be the same, that is why they are used interchangeably
+        default_array = np.zeros((len(data[b_col]), 2))
+        #empty_array = [None]*len(data[l_col])
+        empty_array = [[]]*len(data[b_col])
+
+        data_bjet_eta = ak.where(ak.is_none(dr_mask), default_array, data[b_col].eta)
+        abs_eta_bjet = abs(data_bjet_eta[:,0])
+        bjet_eta_final = ak.where(ak.is_none(dr_mask), empty_array, abs_eta_bjet)
+
+        '''
+        for i in range(len(data["Jet"])):
+            print()
+            print("Event number in eta_leading_bjet",i)
+            print("Leading B jet pt",data[b_col][i].pt)
+            print("Leading B jet eta",data[b_col][i].eta)
+            print("Absolute value of leading B jet eta",abs_eta_bjet[i])
+            print("bjet_eta_final",bjet_eta_final[i])
+        '''
+        #hahaha
+        return bjet_eta_final
 
     #This method is not quite right, but even taking them from the charge tagger, not sure whether anything new will actually be obtained from this,
     #because the rec (highest probability score) meson categories have already been made
@@ -2736,7 +2942,7 @@ class Processor(pepper.ProcessorBasicPhysics):
         #lepton_mother_final = ak.where(ak.is_none(dr_mask), empty_array, lepton_mother.pdgId)
 
     def lepton_recursion(self,lep_recursion_level,lep_mother,data):
-        #print("Reached level ", str(lep_recursion_level)," of mothers")
+        print("Reached level ", str(lep_recursion_level)," of mothers")
         no_lepton_id = ~((abs(lep_mother.pdgId) >= 11) & (abs(lep_mother.pdgId) <= 18))
 
         repeat_only_pdg = ak.num(lep_mother[no_lepton_id],axis=1)
@@ -2748,8 +2954,8 @@ class Processor(pepper.ProcessorBasicPhysics):
         #These are the number of events that have only repeat mothers and do not any mothers at the next level (i.e. something like mother)
         repeat_end = ak.num(lep_mother[lep_mother.genPartIdxMother == end_index],axis=1)
         repeat_end_num = ak.num(repeat_end[(repeat_end==ak.num(lep_mother,axis=1)) & (repeat_only_pdg==0)],axis=0)
-        #print("Number of events having only repeat lepton mothers",repeat_num)
-        #print("Number of events having only repeat lepton mothers that are also at the end (beginning)",repeat_end_num)
+        print("Number of events having only repeat lepton mothers",repeat_num)
+        print("Number of events having only repeat lepton mothers that are also at the end (beginning)",repeat_end_num)
 
         repeat_mask = ak.mask(data,repeat_only_pdg==0)
         '''
@@ -2834,7 +3040,7 @@ class Processor(pepper.ProcessorBasicPhysics):
         return fin_final
     '''
 
-    def lepton_chain_full(self,pdgid_arr,data):
+    def lepton_chain_full(self,make_full_chain,pdgid_arr,data):
         #This consists of the rest of the part used to make chains
         index_gen = ak.local_index(data["GenPart"],axis=1)
         abs_pdgid = abs(data["GenPart"]["pdgId"])
@@ -2850,17 +3056,21 @@ class Processor(pepper.ProcessorBasicPhysics):
         #fresh = part_index[abs(data["GenPart"][mother]["pdgId"])!=pdgid_arr]
         fresh = part_index[~((abs(data["GenPart"][mother]["pdgId"])==pdgid_arr[0])|(abs(data["GenPart"][mother]["pdgId"])==pdgid_arr[1])|(abs(data["GenPart"][mother]["pdgId"])==pdgid_arr[2]))]
         #print("Fresh b s for event 95",fresh[95])
-        part_index = ak.sort(part_index,axis=1,ascending=True)   
-        one = ak.unflatten(fresh,1,axis=1)
 
-        recursion_level = 1
-        #init_final = [[]]*len(data["Jet"])
-        init_final = one
-        fin_final = self.make_chain(fresh,part_index,one,init_final,recursion_level,data)
-        #print("fin_final for event 95",fin_final[95])
-        fin_final = fin_final[ak.argsort(fin_final[:,:,0],axis=1,ascending=True)]  
-        return fresh, fin_final
+        if make_full_chain == 1:
+            part_index = ak.sort(part_index,axis=1,ascending=True)   
+            one = ak.unflatten(fresh,1,axis=1)
 
+            recursion_level = 1
+            #init_final = [[]]*len(data["Jet"])
+            init_final = one
+            fin_final = self.make_chain(fresh,part_index,one,init_final,recursion_level,data)
+            #print("fin_final for event 95",fin_final[95])
+            fin_final = fin_final[ak.argsort(fin_final[:,:,0],axis=1,ascending=True)]  
+            return fresh, fin_final
+        
+        elif make_full_chain == 0:
+            return fresh
 
     def chain_full(self,pdgid_req,data):
         #This consists of the rest of the part used to make chains
@@ -3068,21 +3278,22 @@ class Processor(pepper.ProcessorBasicPhysics):
         b_bbar_object = data["GenPart"][b_last_object] 
         b_last_pdgid = b_bbar_object.pdgId
 
-        dr_mask = ak.mask(data,(ak.num(data["bjets"].eta)>0)&(ak.num(data["bjets"].matched_gen.eta)>0)) #So it should have reco pt and also matched gen pt
-        #dr_gen_mask = ak.mask(data,ak.num(data["bjets"].matched_gen.eta)>0)
+        #dr_mask = ak.mask(data,(ak.num(data["bjets_tight"].eta)>0)&(ak.num(data["bjets_tight"].matched_gen.eta)>0)) #So it should have reco pt and also matched gen pt
+        dr_mask = ak.mask(data,(ak.num(data["bjets_tight"].eta)>0) & (ak.count(data["bjets_tight"].matched_gen.eta,axis=1)>0)) #So it should have reco pt and also matched gen pt
+        #dr_gen_mask = ak.mask(data,ak.num(data["bjets_tight"].matched_gen.eta)>0)
         dr_part_mask = ak.mask(data,ak.num(b_bbar_object.eta)>0)
         #print("Size of events satisfying the mask (having bjets)",len(dr_mask))
 
-        #of course lengths of l_col and "bjets" are supposed to be the same, that is why they are used interchangeably
-        default_array = np.zeros((len(data["bjets"]), 2))
-        default_part_array = np.zeros((len(data["bjets"]), 1))
-        empty_array = [None]*len(data["bjets"])
+        #of course lengths of l_col and "bjets_tight" are supposed to be the same, that is why they are used interchangeably
+        default_array = np.zeros((len(data["bjets_tight"]), 2))
+        default_part_array = np.zeros((len(data["bjets_tight"]), 1))
+        empty_array = [None]*len(data["bjets_tight"])
         #Since this is being calculated after the at least one lepton cut is put, there is no need to ensure whether the lepton exists or not
 
-        data_bjet_pt = ak.where(ak.is_none(dr_mask), default_array, data["bjets"].matched_gen.pt)
-        #data_bjet_mass = ak.where(ak.is_none(dr_mask), default_array, data["bjets"].mass) #What exactly is this?
-        data_bjet_eta = ak.where(ak.is_none(dr_mask), default_array, data["bjets"].matched_gen.eta)
-        data_bjet_phi = ak.where(ak.is_none(dr_mask), default_array, data["bjets"].matched_gen.phi)
+        data_bjet_pt = ak.where(ak.is_none(dr_mask), default_array, data["bjets_tight"].matched_gen.pt)
+        #data_bjet_mass = ak.where(ak.is_none(dr_mask), default_array, data["bjets_tight"].mass) #What exactly is this?
+        data_bjet_eta = ak.where(ak.is_none(dr_mask), default_array, data["bjets_tight"].matched_gen.eta)
+        data_bjet_phi = ak.where(ak.is_none(dr_mask), default_array, data["bjets_tight"].matched_gen.phi)
 
         data_bpart_eta = ak.where(ak.is_none(dr_part_mask), default_part_array, b_bbar_object.eta)
         data_bpart_phi = ak.where(ak.is_none(dr_part_mask), default_part_array, b_bbar_object.phi)
@@ -3102,8 +3313,55 @@ class Processor(pepper.ProcessorBasicPhysics):
         #large_phi_mask = ak.mask(delta_phi_flat,delta_phi_flat>2) #Different lower limit for debugging
         delta_phi_new = ak.where(ak.is_none(large_phi_mask), delta_phi_flat, pi_array-delta_phi_flat)
 
-        delta_phi_final = ak.unflatten(delta_phi_new,ak.num(data_bpart_phi,axis=1))
+        '''
+        print("length of delta_phi_new",ak.num(delta_phi_new,axis=0))
+        print("Length of data_bpart_phi",ak.num(data_bpart_phi,axis=0))
+        print("Length of delta_phi",ak.num(delta_phi,axis=0))
+        print("length of delta_phi_flat",ak.num(delta_phi_flat,axis=0))
+        '''
 
+        len_data_bpart_phi = 0
+        len_delta_phi = 0
+
+        '''
+        for i in range(len(data["Jet"])):
+            print()
+            print("Event number in dR_bjet_chain_match",i)
+            ent_data_bpart_phi = ak.num(data_bpart_phi,axis=1)[i]
+            print("Number of entries in data_bpart_phi",ent_data_bpart_phi)
+            print("data_bjet_phi[:,0]",data_bjet_phi[:,0][i]) # this is turning out to be none, which it really should not have been
+            print("dr_mask",dr_mask[i])
+            print("Bjet attributes")
+            print("pt",data["bjets_tight"][i].pt)
+            print("eta",data["bjets_tight"][i].eta)
+            print("phi",data["bjets_tight"][i].phi)
+
+            print("Bjet matched_gen attributes")
+            print("pt",data["bjets_tight"].matched_gen[i].pt)
+            print("eta",data["bjets_tight"].matched_gen[i].eta)
+            print("phi",data["bjets_tight"].matched_gen[i].phi)
+            print("How many elements are not none", ak.count(data["bjets_tight"].matched_gen.eta,axis=1)[i]) #This should skip the number that is None
+
+            print("Final bjet attributes")
+            print("pt",data_bjet_pt[i])
+            print("eta",data_bjet_eta[i])
+            print("phi",data_bjet_phi[i])
+
+            print("data_bpart_phi",data_bpart_phi[i])
+            print("delta_phi",delta_phi[i])
+            ent_delta_phi = ak.num(delta_phi,axis=1)[i]
+            print("Number of entries in delta_phi",ent_delta_phi)
+            #print("Number of entries in data_bjet_phi[:,0]",len(data_bjet_phi[:,0][i]))
+            len_data_bpart_phi+=ent_data_bpart_phi
+            #len_delta_phi+=ent_delta_phi
+
+        #Both should be equal and amount to ak.num(delta_phi_new,axis=0) [Fully flattened number of entries]
+        print("len_data_bpart_phi",len_data_bpart_phi)
+        #print("len_delta_phi",len_delta_phi)
+        '''
+
+        delta_phi_final = ak.unflatten(delta_phi_new,ak.num(data_bpart_phi,axis=1))
+        #hahaha
         #Only for debugging
         count_pi = ak.count(ak.mask(delta_phi,delta_phi>pi),axis=1)
 
@@ -3136,11 +3394,11 @@ class Processor(pepper.ProcessorBasicPhysics):
         '''
         for i in range(len(data["Jet"])):
             print()
-            print("Event number in dR_bjet_part_match",i)
+            print("Event number in dR_bjet_chain_match",i)
             print("b chains for event (first to last)",b_last_object[i])
             print("pdg id from gen part object",b_last_pdgid[i])
-            print("Leading B jet pt",data["bjets"][i].pt)
-            print("Leading B jet matched gen pt",data["bjets"][i].matched_gen.pt)
+            print("Leading B jet pt",data["bjets_tight"][i].pt)
+            print("Leading B jet matched gen pt",data["bjets_tight"][i].matched_gen.pt)
             print("dR dummy not adjusted",dr_dummy_old[i])
 
             print("Wrong phi (not adjusted for greater than pi values)",data_bjet_phi[:,0][i]-data_bpart_phi[i])
@@ -3152,8 +3410,8 @@ class Processor(pepper.ProcessorBasicPhysics):
             print("Values of delta phi greater than pi",count_pi[i])
 
             #Comparing with delta_r from the vector.py
-            if (len(data["bjets"].matched_gen[i])>0) & (len(b_bbar_object[i])>0):
-                dR_function = data["bjets"].matched_gen[i][0].delta_r(b_bbar_object[i])
+            if (len(data["bjets_tight"].matched_gen[i])>0) & (len(b_bbar_object[i])>0):
+                dR_function = data["bjets_tight"].matched_gen[i][0].delta_r(b_bbar_object[i])
                 print("dR dummy adjusted",dr_dummy[i])
                 print("dR function",dR_function)
 
@@ -3172,21 +3430,21 @@ class Processor(pepper.ProcessorBasicPhysics):
 
         b_bbar_object = data["GenPart"][(abs(data["GenPart"].pdgId)==5)]
 
-        dr_mask = ak.mask(data,(ak.num(data["bjets"].eta)>0)&(ak.num(data["bjets"].matched_gen.eta)>0)) #So it should have reco pt and also matched gen pt
-        #dr_gen_mask = ak.mask(data,ak.num(data["bjets"].matched_gen.eta)>0)
+        dr_mask = ak.mask(data,(ak.num(data["bjets_tight"].eta)>0)&(ak.num(data["bjets_tight"].matched_gen.eta)>0)) #So it should have reco pt and also matched gen pt
+        #dr_gen_mask = ak.mask(data,ak.num(data["bjets_tight"].matched_gen.eta)>0)
         dr_part_mask = ak.mask(data,ak.num(b_bbar_object.eta)>0)
         #print("Size of events satisfying the mask (having bjets)",len(dr_mask))
 
-        #of course lengths of l_col and "bjets" are supposed to be the same, that is why they are used interchangeably
-        default_array = np.zeros((len(data["bjets"]), 2))
-        default_part_array = np.zeros((len(data["bjets"]), 1))
-        empty_array = [None]*len(data["bjets"])
+        #of course lengths of l_col and "bjets_tight" are supposed to be the same, that is why they are used interchangeably
+        default_array = np.zeros((len(data["bjets_tight"]), 2))
+        default_part_array = np.zeros((len(data["bjets_tight"]), 1))
+        empty_array = [None]*len(data["bjets_tight"])
         #Since this is being calculated after the at least one lepton cut is put, there is no need to ensure whether the lepton exists or not
 
-        data_bjet_pt = ak.where(ak.is_none(dr_mask), default_array, data["bjets"].matched_gen.pt)
-        #data_bjet_mass = ak.where(ak.is_none(dr_mask), default_array, data["bjets"].mass) #What exactly is this?
-        data_bjet_eta = ak.where(ak.is_none(dr_mask), default_array, data["bjets"].matched_gen.eta)
-        data_bjet_phi = ak.where(ak.is_none(dr_mask), default_array, data["bjets"].matched_gen.phi)
+        data_bjet_pt = ak.where(ak.is_none(dr_mask), default_array, data["bjets_tight"].matched_gen.pt)
+        #data_bjet_mass = ak.where(ak.is_none(dr_mask), default_array, data["bjets_tight"].mass) #What exactly is this?
+        data_bjet_eta = ak.where(ak.is_none(dr_mask), default_array, data["bjets_tight"].matched_gen.eta)
+        data_bjet_phi = ak.where(ak.is_none(dr_mask), default_array, data["bjets_tight"].matched_gen.phi)
 
         data_bpart_eta = ak.where(ak.is_none(dr_part_mask), default_part_array, b_bbar_object.eta)
         data_bpart_phi = ak.where(ak.is_none(dr_part_mask), default_part_array, b_bbar_object.phi)
@@ -3242,8 +3500,8 @@ class Processor(pepper.ProcessorBasicPhysics):
         for i in range(len(data["Jet"])):
             print()
             print("Event number in dR_bjet_part_match",i)
-            print("Leading B jet pt",data["bjets"][i].pt)
-            print("Leading B jet matched gen pt",data["bjets"][i].matched_gen.pt)
+            print("Leading B jet pt",data["bjets_tight"][i].pt)
+            print("Leading B jet matched gen pt",data["bjets_tight"][i].matched_gen.pt)
             print("dR dummy not adjusted",dr_dummy_old[i])
 
             print("Wrong phi (not adjusted for greater than pi values)",data_bjet_phi[:,0][i]-data_bpart_phi[i])
@@ -3255,8 +3513,8 @@ class Processor(pepper.ProcessorBasicPhysics):
             print("Values of delta phi greater than pi",count_pi[i])
 
             #Comparing with delta_r from the vector.py
-            if (len(data["bjets"].matched_gen[i])>0) & (len(b_bbar_object[i])>0):
-                dR_function = data["bjets"].matched_gen[i][0].delta_r(b_bbar_object[i])
+            if (len(data["bjets_tight"].matched_gen[i])>0) & (len(b_bbar_object[i])>0):
+                dR_function = data["bjets_tight"].matched_gen[i][0].delta_r(b_bbar_object[i])
                 print("dR dummy adjusted",dr_dummy[i])
                 print("dR function",dR_function)
 
@@ -3344,6 +3602,21 @@ class Processor(pepper.ProcessorBasicPhysics):
         return daughter_index_b_1_final, daughter_top, top_last_sign, data
 
 
+    def cumulative_sum(self,cumulative_ngenpart_ak,rel_index):
+        #Sum for the cumulative indices
+        sum_combo = ak.cartesian([cumulative_ngenpart_ak, rel_index], axis=1)
+        print("sum_combo",sum_combo)
+        sum_combo_flat = ak.flatten(sum_combo)
+        genpart_size, relative_index = ak.unzip(sum_combo_flat) #Trying this out inside of the 3 index labeling
+        genpart_size = ak.unflatten(genpart_size,1)
+        relative_index = ak.unflatten(relative_index,1)
+        print("genpart_size",genpart_size)
+        print("relative_index",relative_index)
+        concat_sum = ak.concatenate([genpart_size,relative_index],axis=1)
+        print("concat_sum",concat_sum)
+        actual_index = ak.to_numpy(ak.sum(concat_sum,axis=1))
+        print("actual_index",actual_index)
+        return actual_index
 
 
     def b_daughters_recursion(self, n_daughters, recursion_level, daughter_index_b_1_final, daughter_previous, top_last_sign, data):
