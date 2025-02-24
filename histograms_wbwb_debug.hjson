@@ -1,0 +1,95 @@
+{
+    "dR_lb": {
+        "bins": [
+            {
+                "name": "dR_lb",
+                "label": "$dR_{lb}$",
+                "n_or_arr": 50,
+                "lo": 0,
+                "hi": 5,
+            }
+        ],
+        "fill": {
+            "dR_lb": [
+                "dR_lb"
+            ]
+        },
+        
+    },
+
+    "dphi_lb": {
+        "bins": [
+            {
+                "name": "dphi_lb",
+                "label": "$dphi_{lb}$",
+                "n_or_arr": 80,
+                "lo": 0,
+                "hi": 4,
+            }
+        ],
+        "fill": {
+            "dphi_lb": [
+                "dphi_lb"
+            ]
+        },
+        
+    },
+
+    "abs_eta_b": {
+        "bins": [
+            {
+                "name": "abs_eta_b",
+                "label": "$abs_eta_b$",
+                "n_or_arr": 100,
+                "lo": 0,
+                "hi": 5,
+            }
+        ],
+        "fill": {
+            "abs_eta_b": [
+                "abs_eta_b"
+            ]
+        },
+        
+    },
+
+
+    "b_l_recMET_min_mass_final": {
+        "bins": [
+            {
+                "name": "b_l_recMET_min_mass_final",
+                "label": "$b_l_recMET_min_mass_final$",
+                "n_or_arr": 500,
+                "lo": 0,
+                "hi": 1000,
+                "unit": "GeV"
+            }
+        ],
+        "fill": {
+            "b_l_recMET_min_mass_final": [
+                "b_l_recMET_min_mass_final"
+            ]
+        },
+        
+    },
+
+    "b_l_recMET_max_mass_final": {
+        "bins": [
+            {
+                "name": "b_l_recMET_max_mass_final",
+                "label": "$b_l_recMET_max_mass_final$",
+                "n_or_arr": 500,
+                "lo": 0,
+                "hi": 1000,
+                "unit": "GeV"
+            }
+        ],
+        "fill": {
+            "b_l_recMET_max_mass_final": [
+                "b_l_recMET_max_mass_final"
+            ]
+        },
+        
+    },
+
+}
