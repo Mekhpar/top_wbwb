@@ -93,3 +93,64 @@
     },
 
 }
+
+    "1st_jet_pt":
+    {
+        "bins": [
+            {
+                "name": "pt",
+                "label": "leading Jet $p_{\\mathrm{T}}$",
+                "n_or_arr": 20,
+                "lo": 0,
+                "hi": 200
+            }
+        ],
+        "fill": {
+            "pt": [
+                "Jet",
+                "pt",
+                {"leading": 1}
+            ]
+        },
+    },
+
+    "1st_bjet_pt":
+    {
+        "bins": [
+            {
+                "name": "pt",
+                "label": "leading b Jet $p_{\\mathrm{T}}$",
+                "n_or_arr": 20,
+                "lo": 0,
+                "hi": 200
+            }
+        ],
+        "fill": {
+            "pt": [
+                "bjets_tight",
+                "pt",
+                {"leading": 1}
+            ]
+        },
+    },
+
+    "1st_lep_pt":
+    {
+        "bins": [
+            {
+                "name": "pt",
+                "label": "leading lepton $p_{\\mathrm{T}}$",
+                "n_or_arr": 20,
+                "lo": 0,
+                "hi": 200
+            }
+        ],
+        "fill": {
+            "pt": [
+                "Lepton",
+                "pt",
+                {"leading": 1}
+            ]
+        },
+    },
+
