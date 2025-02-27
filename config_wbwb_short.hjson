@@ -1,0 +1,309 @@
+{
+    ##################################################
+    # input dirs
+    ##################################################
+
+    "inputdir" : "$CONFDIR/../../common/ul17",
+    "store": "/pnfs/desy.de/cms/tier2/store",
+
+    ##################################################
+    # systematics or nominal only
+    ##################################################
+
+    #"compute_systematics": true,
+    "compute_systematics": false,
+    # handle normalization uncs at the datacard level:
+    "skip_nonshape_systematics": true,
+
+    ##################################################
+    # basic info
+    ##################################################
+
+    "year": "2017",
+    "luminosity": 41.48,
+    "lumimask": "$INPUTDIR/lumi/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt",
+    "crosssections": "$INPUTDIR/../crosssections.hjson",
+    "mc_lumifactors": "$CONFDIR/lumi/lumifactors_pdfsumw_240604.hjson",
+    "pileup_reweighting": "$CONFDIR/pileup/pileup.root",
+    "rng_seed_file": "seed.txt",
+
+    "data_pu_hist": "$INPUTDIR/pileup/PileupHistogram-goldenJSON-13tev-2017-69200ub-99bins.root",
+    "data_pu_hist_up": "$INPUTDIR/pileup/PileupHistogram-goldenJSON-13tev-2017-72400ub-99bins.root",
+    "data_pu_hist_down": "$INPUTDIR/pileup/PileupHistogram-goldenJSON-13tev-2017-66000ub-99bins.root",
+
+    ##################################################
+    # datasets
+    ##################################################
+
+
+    "exp_datasets": {
+        #"SingleMuon": [
+        #    "/SingleMuon/Run2017B-02Apr2020-v1/NANOAOD"
+        #]
+    },
+        "data_eras": {
+        "2017B": [297047, 299329],
+    },
+    "mc_datasets": {
+        #"ST_t-channel_antitop_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8": [
+        #    "/ST_t-channel_antitop_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8/eranken-WbChargeReco_test_mc_test-62cbc0c004fd26b15aed4ccd808bd3aa/USER"
+        #],
+        #"ST_t-channel_top_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8": [
+        #    "/ST_t-channel_top_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8/eranken-WbChargeReco_mc_2017_test-62cbc0c004fd26b15aed4ccd808bd3aa/USER"
+        #],
+        #"ST_s-channel_4f_leptonDecays_TuneCP5_13TeV-amcatnlo-pythia8": [
+        #    "/ST_s-channel_4f_leptonDecays_TuneCP5_13TeV-amcatnlo-pythia8/eranken-WbChargeReco_mc_2017_test-62cbc0c004fd26b15aed4ccd808bd3aa/USER"
+        #],
+        #"QCD_Pt-80To120_MuEnrichedPt5_TuneCP5_13TeV-pythia8": [
+        #    "/pnfs/desy.de/cms/tier2/store/user/eranken/WbChargeReco/test/mc_2017/QCD_Pt-80To120_MuEnrichedPt5_TuneCP5_13TeV-pythia8/WbChargeReco_mc_2017_test/230807_102727/0000/*.root",
+        #],
+        #"TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8": [
+        #    "/pnfs/desy.de/cms/tier2/store/user/eranken/WbChargeReco/test/mc_2017/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/WbChargeReco_mc_2017_test/230523_132649/0000/*.root",
+        #],
+        #"TTToHadronic_TuneCP5_13TeV-powheg-pythia8": [
+        #    "/pnfs/desy.de/cms/tier2/store/user/eranken/WbChargeReco/test/mc_2017/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/WbChargeReco_mc_2017_test/230523_132743/0000/*.root",
+        #    "/pnfs/desy.de/cms/tier2/store/user/eranken/WbChargeReco/test/mc_2017/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/WbChargeReco_mc_2017_test/230523_132743/0001/*.root"
+        #],
+        #"TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8": [
+        #    "/pnfs/desy.de/cms/tier2/store/user/eranken/WbChargeReco/test/mc_2017/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/WbChargeReco_mc_2017_test/230523_132708/0000/*.root"
+        #],
+        #"ST_t-channel_antitop_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8": [
+        #    "/pnfs/desy.de/cms/tier2/store/user/eranken/WbChargeReco/test/mc_2017/ST_t-channel_antitop_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8/WbChargeReco_mc_2017_test/230523_132851/0000/*.root"
+        #],
+        #"ST_t-channel_top_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8": [
+        #    "/pnfs/desy.de/cms/tier2/store/user/eranken/WbChargeReco/test/mc_2017/ST_t-channel_top_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8/WbChargeReco_mc_2017_test/230523_132821/0000/*.root"
+        #],
+        #"ST_s-channel_4f_leptonDecays_TuneCP5_13TeV-amcatnlo-pythia8": [
+        #    "/pnfs/desy.de/cms/tier2/store/user/eranken/WbChargeReco/test/mc_2017/ST_s-channel_4f_leptonDecays_TuneCP5_13TeV-amcatnlo-pythia8/WbChargeReco_mc_2017_test/230523_133045/0000/*.root"
+        #],
+        #"WbjToLNu_4f_TuneCP5_13TeV-madgraph-pythia8": [
+        #    "/pnfs/desy.de/cms/tier2/store/user/eranken/WbChargeReco/test/mc_2017/WbjToLNu_4f_TuneCP5_13TeV-madgraph-pythia8/WbChargeReco_mc_2017_test/230523_132632/0000/*.root"
+        #],
+        "WJetsToLNu_2J_TuneCP5_13TeV-amcatnloFXFX-pythia8": [
+            "/pnfs/desy.de/cms/tier2/store/user/eranken/WbChargeReco/test/mc_2017/WJetsToLNu_2J_TuneCP5_13TeV-amcatnloFXFX-pythia8/WbChargeReco_mc_2017_test/230523_133155/0000/*.root"
+        ],
+
+    },
+    "dataset_for_systematics": {
+    },
+    "dataset_trigger_order": [
+        "EGamma",
+        "SingleMuon"
+    ],
+    "dataset_trigger_map": {
+        "SingleMuon": [
+            "HLT_IsoMu27"
+        ],
+        "EGamma": [
+            "HLT_Ele32_WPTight_Gsf",
+            "HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL",
+            "HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ"
+        ]
+    },
+
+    "trigger_sf_sl":
+        [
+            "$INPUTDIR/trigger/EfficienciesAndSF_RunBtoF_Nov17Nov2017.root",
+            "IsoMu27_PtEtaBins/abseta_pt_ratio",
+            ["abseta", "pt"]
+        ],
+
+    ##################################################
+    # leptons
+    ##################################################
+
+    "ele_eta_min": -2.4,
+    "ele_eta_max": 2.4,
+    "good_ele_pt_min": 34.0,
+    "good_ele_id": "mva:noIso90",
+    "good_ele_iso": "cut:tight",
+    "veto_ele_pt_min": 10.0,
+    "veto_ele_id": "mva:Iso90",
+    "veto_ele_iso": "cut:loose",
+
+    "muon_eta_min": -2.4,
+    "muon_eta_max": 2.4,
+    "good_muon_pt_min": 30.0,
+    "veto_muon_pt_min": 10.0,
+
+    "good_muon_id": "cut:tight",
+    "good_muon_iso": "cut:very_tight",
+
+    "veto_muon_id": "cut:loose",
+    "veto_muon_iso": "cut:loose",
+
+    "fake_muon_id": "cut:tight",
+    "fake_muon_iso": "skip",
+    "fake_muon_pt_min": 20.0,
+
+    "muon_rochester": "$INPUTDIR/rochester/RoccoR2017UL.txt",
+
+    "muon_sf": [
+        [
+            "$CONFDIR/muon/NUM_IsoMu27_DEN_CutBasedIdTight_and_PFIsoVeryTight_abseta_pt.root",            "NUM_IsoMu27_DEN_CutBasedIdTight_and_PFIsoVeryTight_abseta_pt",
+            ["abseta", "pt"]
+        ],
+        # [
+        #     "$INPUTDIR/muon/Efficiencies_muon_generalTracks_Z_Run2017_UL_ISO.root",
+        #     "NUM_TightRelIso_DEN_TightIDandIPCut_abseta_pt",
+        #     ["abseta", "pt"]
+        #     # "$INPUTDIR/muon/Efficiencies_muon_generalTracks_Z_Run2017_UL_ID.root",
+        #     # "NUM_TightID_DEN_TrackerMuons_abseta_pt",
+        # ]
+    ],
+
+    "electron_sf": [
+        [
+            "$INPUTDIR/electron/egammaEffi_ptAbove20.txt_EGM2D_UL2017.root",
+            "EGamma_SF2D",
+            ["eta", "pt"]
+        ],
+        [
+            "$INPUTDIR/electron/egammaEffi.txt_EGM2D_MVA90iso_UL17.root",
+            "EGamma_SF2D",
+            ["eta", "pt"]
+        ]
+    ],
+
+    ##################################################
+    # jets 
+    ##################################################
+
+    "good_jet_id": "cut:tight",
+    "good_jet_puId": "cut:tight",
+    "good_jet_lepton_distance": 0.4,
+    "good_jet_eta_min": -4.7,
+    "good_jet_eta_max": 4.7,
+    "good_jet_pt_min": 30,
+
+    "jet_pt_min": [
+        30,
+        30
+    ],
+    "jet_pt_num_satisfied" : 2,
+
+    "reapply_jec": false,
+    "undo_jec": false,
+    "jet_correction_mc": [
+        "$INPUTDIR/JEC/Summer19UL17_V5_MC/Summer19UL17_V5_MC_L1FastJet_AK4PFchs.txt",
+        "$INPUTDIR/JEC/Summer19UL17_V5_MC/Summer19UL17_V5_MC_L2Relative_AK4PFchs.txt",
+        "$INPUTDIR/JEC/Summer19UL17_V5_MC/Summer19UL17_V5_MC_L3Absolute_AK4PFchs.txt",
+        "$INPUTDIR/JEC/Summer19UL17_V5_MC/Summer19UL17_V5_MC_L2L3Residual_AK4PFchs.txt"
+    ],
+        "jet_correction_data": [
+        "$DATADIR/Winter22Run3_RunC_V1_DATA_L1FastJet_AK4PFPuppi.txt",
+        "$DATADIR/Winter22Run3_RunC_V1_DATA_L2Relative_AK4PFPuppi.txt",
+        "$DATADIR/Winter22Run3_RunC_V1_DATA_L3Absolute_AK4PFPuppi.txt",
+        "$DATADIR/Winter22Run3_RunC_V1_DATA_L2L3Residual_AK4PFPuppi.txt"
+    ],
+    "jet_uncertainty": "$INPUTDIR/JEC/Summer19UL17_V5_MC/RegroupedV2_Summer19UL17_V5_MC_UncertaintySources_AK4PFchs.txt",
+    "jet_resolution": "$INPUTDIR/JER/Summer19UL17_JRV2_MC/Summer19UL17_JRV2_MC_PtResolution_AK4PFchs.txt",
+    "junc_sources_to_use": ["Total"],
+    "jet_ressf": "$INPUTDIR/JER/Summer19UL17_JRV2_MC/Summer19UL17_JRV2_MC_SF_AK4PFchs.txt",
+    "jet_puid_sf": ["$INPUTDIR/jet_puid/UL17_jmar.json"],
+
+    ##################################################
+    # b tagging 
+    ##################################################
+
+    "btag": "deepjet:tight",
+    "btag_veto": "deepjet:loose",
+
+    "btag_method": "fixedwp",
+    "btag_measure_type": "comb",
+    "btag_ignoremissing": false,
+    "btag_jet_eta_max": 2.4,
+
+    "btag_sf": [
+        [
+            "$INPUTDIR/btag/btagging.json",
+            "$CONFDIR/btag/deepjet_tight_231123.root"
+        ]
+    ],
+
+    ##################################################
+    # other uncertainties
+    ##################################################  
+
+    # currently take pdf envelope
+    "split_pdf_uncs": false,
+    "normalize_pdf_uncs": true,
+    "pdf_types": {
+        "91400": "Hessian",
+        "306000": "Hessian",
+        "325300": "Hessian",
+        "325500": "Hessian",
+        "320900" : "MC_Gaussian"
+    },
+
+
+    ##################################################
+    # outputs
+    ##################################################    
+
+    "hists": "$CONFDIR/../hist_configs/histograms_wbwb_debug.hjson",
+    "histogram_format":"hist",
+    "cuts_to_histogram": ["HasLepton","OneGoodLep","NoVetoLeps","JetPtReq","HasOneGenLepton","btagSF"],
+    "column_output_format": "root",
+    "columns_to_save": {
+        "jet_pt": ["Jet", "pt"],
+        "jet_eta": ["Jet", "eta"],
+    },
+    "plot_dataset_groups": [
+        # {
+        #     "label": "Signal",
+        #     "color": "mediumblue",
+        #     "datasets": [
+        #         "WbjToLNu_4f_TuneCP5_13TeV-madgraph-pythia8"
+        #     ]
+        # },  
+        {
+            "label": "Signal",
+            "name": "signal",
+            "color": "mediumblue",
+            "datasets": [
+            #"ST_t-channel_antitop_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8",
+            #"ST_t-channel_top_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8",
+            #"ST_s-channel_4f_leptonDecays_TuneCP5_13TeV-amcatnlo-pythia8"
+            ]
+        },  
+        {
+            "label": "$\\mathrm{t \\bar{t}}$",
+            "name": "ttbar",
+            "color": "firebrick",
+            "datasets": [
+                #"TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8",
+                #"TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8",
+                "TTToHadronic_TuneCP5_13TeV-powheg-pythia8"
+            ]
+        },
+
+    ],
+    "plot_datasets_ignore": [
+         "ST_t-channel_antitop_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8",
+         "ST_t-channel_top_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8",
+         "ST_s-channel_4f_leptonDecays_TuneCP5_13TeV-amcatnlo-pythia8",
+        "WbjToLNu_4f_TuneCP5_13TeV-madgraph-pythia8"
+    ],
+
+    "plot_datasets_data": [
+        {
+            "label": "One_Muon",
+            "name": "One_Muon",
+            "datasets": [
+                "SingleMuon"
+            ]
+        }
+        
+    ],
+
+    # format for categories to be used in plotting, placehholder
+    # "categories": {
+    #     "ee": {"channel": "is_ee", "jet_btag": ["j2+_b1", "j2+_b2", "j01_b1"]},
+    #     "mm": {"channel": "is_mm", "jet_btag": ["j2+_b1", "j2+_b2", "j01_b1"]},
+    # },
+    # "cat_labels": {
+    #     "ee": "ee channel",
+    #     "mm": "µµ channel",
+    # },
+}
