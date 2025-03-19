@@ -847,6 +847,41 @@ class ProcessorBasicPhysics(pepper.Processor):
         part = ak.zip(part, with_name="PtEtaPhiMLorentzVector", behavior=data.behavior)
         
         return part, bjet_mask
+        
+    def build_bjet_column(self, is_mc, column_name, data):
+        part = {}
+        leading_bjet_mask = ak.mask(data,ak.num(data[column_name].eta)>0)
+        subleading_bjet_mask = ak.mask(data,ak.num(data[column_name].eta)>1)
+        #print("Size of events satisfying the mask (having bjets)",len(bjet_mask))
+        '''
+        #of course lengths of l_col and b_col are supposed to be the same, that is why they are used interchangeably
+        default_bjet_array = np.zeros((len(data[column_name]), 2))
+
+        #Since this is being calculated after the at least one lepton cut is put, there is no need to ensure whether the lepton exists or not
+
+        part["pt"] = ak.where(ak.is_none(bjet_mask), default_bjet_array, data[column_name].pt)
+        part["mass"] = ak.where(ak.is_none(bjet_mask), default_bjet_array, data[column_name].mass) #What exactly is this?
+        part["eta"] = ak.where(ak.is_none(bjet_mask), default_bjet_array, data[column_name].eta)
+        part["phi"] = ak.where(ak.is_none(bjet_mask), default_bjet_array, data[column_name].phi)
+        '''
+
+        columns = ["pt", "eta", "phi", "mass"]
+        for column_dict in columns:
+            part[column_dict] = ak.pad_none(data[column_name][column_dict], 2, clip=True)
+            part[column_dict] = ak.fill_none(part[column_dict], 0)
+
+        '''
+        for i in range(len(data["Jet"])):
+            print()
+            print("Event number in build_bjet_column",i)
+            for column_dict in columns:
+                print("Bjet",column_dict,part[column_dict][i])
+
+        hahaha
+        '''
+        part = ak.zip(part, with_name="PtEtaPhiMLorentzVector", behavior=data.behavior)
+        
+        return part, leading_bjet_mask,subleading_bjet_mask
 
 
     def compute_lepton_sf(self, data):
@@ -1195,8 +1230,13 @@ class ProcessorBasicPhysics(pepper.Processor):
 
             gen_meson = gen_meson[is_good_jet]
             for feature_group in tfdata.keys():
-                tfdata[feature_group] = tfdata[feature_group][is_good_jet]
-            
+                print("is_good_jet",len(is_good_jet))
+                if len(is_good_jet) > 0:
+                    tfdata[feature_group] = tfdata[feature_group][is_good_jet]
+
+                elif len(is_good_jet) == 0:
+                    pass #Technically no cuts needed
+
             '''
             meson_tag = meson_tag[is_good_jet]
             prob_neg = prob_neg[is_good_jet]
@@ -1218,7 +1258,10 @@ class ProcessorBasicPhysics(pepper.Processor):
 
                 gen_meson = gen_meson[ak.argsort(jets["pt"], ascending=False)]
                 for feature_group in tfdata.keys():
-                    tfdata[feature_group] = tfdata[feature_group][ak.argsort(jets["pt"], ascending=False)]
+                    if len(is_good_jet) > 0:
+                        tfdata[feature_group] = tfdata[feature_group][ak.argsort(jets["pt"], ascending=False)]
+                    elif len(is_good_jet) == 0:
+                        pass #Nothing to sort really
 
                 '''
                 meson_tag = meson_tag[ak.argsort(jets["pt"], ascending=False)]
@@ -1380,19 +1423,41 @@ class ProcessorBasicPhysics(pepper.Processor):
         #real_flag = (jets["btagged"]==1) & (gen_meson!=0)
         #real_flag = (jets[btag_column]==1) & (gen_meson!=0) #This same flag will also be used for the loose (or medium) jets
         real_flag = (jets[btag_column]==1) & (gen_meson!=0) #This same flag will also be used for the loose (or medium) jets
-        data["bjets_" + wp] = jets[real_flag]
-        #Returning the score (b flavor, not charge) only for debugging
-        
-        data["meson_tag_real_" + wp] = meson_tag[real_flag]
-        data["gen_meson_real_" + wp] = gen_meson[real_flag]
-        #jets["btag_new"] = jets["btag"][real_flag]
-        #jets["btag_new"] = jets[real_flag]["btag"]
-        data["btag_" + wp] = jets[real_flag]["btag"]
 
-        data["prob_neg_real_" + wp] = prob_neg[real_flag]
-        data["prob_zerobar_real_" + wp] = prob_zerobar[real_flag]
-        data["prob_zero_real_" + wp] = prob_zero[real_flag]
-        data["prob_pos_real_" + wp] = prob_pos[real_flag]
+        print("Real flag",real_flag)
+        print("prob_neg",prob_neg)
+        print("Number of jets before applying the real_flag in build_btag_column (replace if everything is zero)",len(data["Jet"]))
+        print("Number of jets in each events before applying the real_flag in build_btag_column (replace if everything is zero)",ak.num(data["Jet"],axis=1))
+
+        if len(jets) > 0:
+            data["bjets_" + wp] = jets[real_flag]
+            #Returning the score (b flavor, not charge) only for debugging
+            
+            data["meson_tag_real_" + wp] = meson_tag[real_flag]
+            data["gen_meson_real_" + wp] = gen_meson[real_flag]
+            #jets["btag_new"] = jets["btag"][real_flag]
+            #jets["btag_new"] = jets[real_flag]["btag"]
+            data["btag_" + wp] = jets[real_flag]["btag"]
+
+            data["prob_neg_real_" + wp] = prob_neg[real_flag]
+            data["prob_zerobar_real_" + wp] = prob_zerobar[real_flag]
+            data["prob_zero_real_" + wp] = prob_zero[real_flag]
+            data["prob_pos_real_" + wp] = prob_pos[real_flag]
+        
+        elif len(jets) == 0:
+            data["bjets_" + wp] = jets
+            #Returning the score (b flavor, not charge) only for debugging
+            
+            data["meson_tag_real_" + wp] = meson_tag
+            data["gen_meson_real_" + wp] = gen_meson
+            #jets["btag_new"] = jets["btag"]
+            #jets["btag_new"] = jets["btag"]
+            data["btag_" + wp] = jets["btag"]
+
+            data["prob_neg_real_" + wp] = prob_neg
+            data["prob_zerobar_real_" + wp] = prob_zerobar
+            data["prob_zero_real_" + wp] = prob_zero
+            data["prob_pos_real_" + wp] = prob_pos
 
         data["meson_tag_real_" + wp] = data["meson_tag_real_" + wp][ak.argsort(data["bjets_" + wp]["pt"], ascending=False)]
         data["gen_meson_real_" + wp] = data["gen_meson_real_" + wp][ak.argsort(data["bjets_" + wp]["pt"], ascending=False)]
@@ -1405,6 +1470,7 @@ class ProcessorBasicPhysics(pepper.Processor):
 
         data["bjets_" + wp] = data["bjets_" + wp][ak.argsort(data["bjets_" + wp]["pt"], ascending=False)]
         data["real_flag_" + wp] = real_flag
+        print("Number of jets in build_btag_column (replace if everything is zero)",len(data["Jet"]))
         '''
         for i in range(len(data["Jet"])):
             print()
@@ -1433,14 +1499,25 @@ class ProcessorBasicPhysics(pepper.Processor):
         prob_pos = data["prob_pos"]
 
         missing_flag = (jets["btagged"]==0) & (gen_meson!=0)
-        data["bjets_miss"] = jets[missing_flag]
-        #No assigned meson tag here because the rec flag is zero
-        data["gen_meson_miss"] = gen_meson[missing_flag]
+        if len(jets) > 0:
+            data["bjets_miss"] = jets[missing_flag]
+            #No assigned meson tag here because the rec flag is zero
+            data["gen_meson_miss"] = gen_meson[missing_flag]
 
-        data["prob_neg_miss"] = prob_neg[missing_flag]
-        data["prob_zerobar_miss"] = prob_zerobar[missing_flag]
-        data["prob_zero_miss"] = prob_zero[missing_flag]
-        data["prob_pos_miss"] = prob_pos[missing_flag]
+            data["prob_neg_miss"] = prob_neg[missing_flag]
+            data["prob_zerobar_miss"] = prob_zerobar[missing_flag]
+            data["prob_zero_miss"] = prob_zero[missing_flag]
+            data["prob_pos_miss"] = prob_pos[missing_flag]
+
+        elif len(jets) == 0:
+            data["bjets_miss"] = jets
+            #No assigned meson tag here because the rec flag is zero
+            data["gen_meson_miss"] = gen_meson
+
+            data["prob_neg_miss"] = prob_neg
+            data["prob_zerobar_miss"] = prob_zerobar
+            data["prob_zero_miss"] = prob_zero
+            data["prob_pos_miss"] = prob_pos
 
         data["gen_meson_miss"] = data["gen_meson_miss"][ak.argsort(data["bjets_miss"]["pt"], ascending=False)]
         data["bjets_miss"] = data["bjets_miss"][ak.argsort(data["bjets_miss"]["pt"], ascending=False)]
@@ -1463,14 +1540,25 @@ class ProcessorBasicPhysics(pepper.Processor):
         prob_pos = data["prob_pos"]
 
         fake_flag = (jets["btagged"]==1) & (gen_meson==0)
-        data["bjets_fake"] = jets[fake_flag]
-        data["meson_tag_fake"] = meson_tag[fake_flag]
-        data["gen_meson_fake"] = gen_meson[fake_flag]
+        if len(jets) > 0:
+            data["bjets_fake"] = jets[fake_flag]
+            data["meson_tag_fake"] = meson_tag[fake_flag]
+            data["gen_meson_fake"] = gen_meson[fake_flag]
 
-        data["prob_neg_fake"] = prob_neg[fake_flag]
-        data["prob_zerobar_fake"] = prob_zerobar[fake_flag]
-        data["prob_zero_fake"] = prob_zero[fake_flag]
-        data["prob_pos_fake"] = prob_pos[fake_flag]
+            data["prob_neg_fake"] = prob_neg[fake_flag]
+            data["prob_zerobar_fake"] = prob_zerobar[fake_flag]
+            data["prob_zero_fake"] = prob_zero[fake_flag]
+            data["prob_pos_fake"] = prob_pos[fake_flag]
+
+        elif len(jets) == 0:
+            data["bjets_fake"] = jets
+            data["meson_tag_fake"] = meson_tag
+            data["gen_meson_fake"] = gen_meson
+
+            data["prob_neg_fake"] = prob_neg
+            data["prob_zerobar_fake"] = prob_zerobar
+            data["prob_zero_fake"] = prob_zero
+            data["prob_pos_fake"] = prob_pos
 
         data["meson_tag_fake"] = data["meson_tag_fake"][ak.argsort(data["bjets_fake"]["pt"], ascending=False)]
         data["gen_meson_fake"] = data["gen_meson_fake"][ak.argsort(data["bjets_fake"]["pt"], ascending=False)]
@@ -1495,7 +1583,11 @@ class ProcessorBasicPhysics(pepper.Processor):
         prob_zero = data["prob_zero"]
         prob_pos = data["prob_pos"]
 
-        return jets[jets.pass_pu_id], meson_tag[jets.pass_pu_id], gen_meson[jets.pass_pu_id], prob_neg[jets.pass_pu_id], prob_zerobar[jets.pass_pu_id], prob_zero[jets.pass_pu_id], prob_pos[jets.pass_pu_id]
+        print("Length of events",len(jets))
+        if len(jets) > 0:
+            return jets[jets.pass_pu_id], meson_tag[jets.pass_pu_id], gen_meson[jets.pass_pu_id], prob_neg[jets.pass_pu_id], prob_zerobar[jets.pass_pu_id], prob_zero[jets.pass_pu_id], prob_pos[jets.pass_pu_id]
+        elif len(jets) == 0:
+            return jets, meson_tag, gen_meson, prob_neg, prob_zerobar, prob_zero, prob_pos
 
 
     def build_lowptjet_column(self, is_mc, junc, jer, rng, data):
@@ -1682,6 +1774,15 @@ class ProcessorBasicPhysics(pepper.Processor):
                 systematics["jet_puid_mis"] = self.compute_puid_sys(
                     weight, weighter, wp, eta, pt, pass_puid,
                     has_gen_jet, "mis")
+        '''
+        for i in range(len(jets)):
+            print()
+            print("Event number in jet_puid_sfs",i)
+            print("Jet pt",jets[i].pt)
+            print("Jet eta",jets[i].eta)
+            print("Weight (possibility of nan)",weight[i])
+        hahaha
+        '''
         return weight, systematics
 
     def jet_pt_requirement(self, column:str, data):
