@@ -1,0 +1,145 @@
+{
+    ##################################################
+    # Process definitions
+    ##################################################
+
+    "bg_procs": {
+        "ttbar": [
+            "TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8",
+            "TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8",
+            "TTToHadronic_TuneCP5_13TeV-powheg-pythia8"
+        ],
+        "wjets": [
+            "WJetsToLNu_0J_TuneCP5_13TeV-amcatnloFXFX-pythia8",
+            "WJetsToLNu_1J_TuneCP5_13TeV-amcatnloFXFX-pythia8",
+            "WJetsToLNu_2J_TuneCP5_13TeV-amcatnloFXFX-pythia8"
+        ],
+        "tW": [
+            "ST_tW_top_5f_inclusiveDecays_TuneCP5_13TeV-powheg-pythia8",
+            "ST_tW_antitop_5f_inclusiveDecays_TuneCP5_13TeV-powheg-pythia8",
+        ],
+        "DY": [
+            "DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8"
+        ],
+        "diboson": [
+            "WW_TuneCP5_13TeV-pythia8",
+            "WZ_TuneCP5_13TeV-pythia8",
+            "ZZ_TuneCP5_13TeV-pythia8"
+        ],
+        "QCD": [
+            "QCD_Pt-1000_MuEnrichedPt5_TuneCP5_13TeV-pythia8",
+            "QCD_Pt-120To170_MuEnrichedPt5_TuneCP5_13TeV-pythia8",
+            "QCD_Pt-120to170_EMEnriched_TuneCP5_13TeV-pythia8",
+            "QCD_Pt-15To20_MuEnrichedPt5_TuneCP5_13TeV-pythia8",
+            "QCD_Pt-15to20_EMEnriched_TuneCP5_13TeV-pythia8",
+            "QCD_Pt-170To300_MuEnrichedPt5_TuneCP5_13TeV-pythia8",
+            "QCD_Pt-170to300_EMEnriched_TuneCP5_13TeV-pythia8",
+            "QCD_Pt-20To30_MuEnrichedPt5_TuneCP5_13TeV-pythia8",
+            "QCD_Pt-20to30_EMEnriched_TuneCP5_13TeV-pythia8",
+            "QCD_Pt-300To470_MuEnrichedPt5_TuneCP5_13TeV-pythia8",
+            "QCD_Pt-300toInf_EMEnriched_TuneCP5_13TeV-pythia8",
+            "QCD_Pt-30To50_MuEnrichedPt5_TuneCP5_13TeV-pythia8",
+            "QCD_Pt-30to50_EMEnriched_TuneCP5_13TeV-pythia8",
+            "QCD_Pt-470To600_MuEnrichedPt5_TuneCP5_13TeV-pythia8",
+            "QCD_Pt-50to80_EMEnriched_TuneCP5_13TeV-pythia8",
+            "QCD_Pt-600To800_MuEnrichedPt5_TuneCP5_13TeV-pythia8",
+            "QCD_Pt-800To1000_MuEnrichedPt5_TuneCP5_13TeV-pythia8",
+            "QCD_Pt-80To120_MuEnrichedPt5_TuneCP5_13TeV-pythia8",
+            "QCD_Pt-80to120_EMEnriched_TuneCP5_13TeV-pythia8"
+        ],
+    },
+    "signal_procs": {
+        "wbj": [
+            "WbjToLNu_4f_TuneCP5_13TeV-madgraph-pythia8"
+        ]
+    },
+    #"data": ["MuonEG", "DoubleMuon", "EGamma", "Muon"],
+    #"data": [],
+    "data": ["TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8"],
+    
+    ##################################################
+    # Category definitions
+    ##################################################
+
+    "categories": {
+        #"ss_j2_b0": {"channel": "mu", "jet_btag":"j2_b0", "sign_cat": "same_sign", "top_cat": "all", "btag_veto_cat": "all"},
+        #"ss_j3_b0": {"channel": "mu", "jet_btag":"j2+_b0", "sign_cat": "same_sign", "top_cat": "all", "btag_veto_cat": "all"},
+
+        "ss_j2_b1": {"channel": "mu", "jet_btag":"j2_b1", "sign_cat": "same_sign", "top_cat": "all", "btag_veto_cat": "all"},
+        "ss_j3_b1": {"channel": "mu", "jet_btag":"j2+_b1", "sign_cat": "same_sign", "top_cat": "all", "btag_veto_cat": "all"},
+
+        "ss_j2_b2": {"channel": "mu", "jet_btag":"j2_b2", "sign_cat": "same_sign", "top_cat": "all", "btag_veto_cat": "all"},
+        "ss_j3_b2": {"channel": "mu", "jet_btag":"j2+_b2", "sign_cat": "same_sign", "top_cat": "all", "btag_veto_cat": "all"},
+    },
+
+    "rebin": {
+        "ss_j2_b1": [1,2,3,4,9],
+        "ss_j3_b1": [2,3,4,9],
+        "ss_j2_b2": [1,2,3,4,9],
+        "ss_j3_b2": [2,3,4,9],
+    }
+
+    ##################################################
+    # Systematic uncertainties
+    ##################################################
+
+    # Shape uncertainties
+    "systematics": {
+        # Theory uncertainties
+        "MEfac_ttbar":         {"hist": "MEfac", "procs": ["ttbar"]},
+        "MEfac_tW":            {"hist": "MEfac", "procs": ["tW"]},
+
+        #Newly added even though systematics have not been generated yet
+        "MEfac_wjets":         {"hist": "MEfac", "procs": ["wjets"]},
+        "MEfac_DY":            {"hist": "MEfac", "procs": ["DY"]},
+        "MEfac_diboson":       {"hist": "MEfac", "procs": ["diboson"]},
+        "MEfac_QCD":           {"hist": "MEfac", "procs": ["QCD"]},
+        "MEfac_wbj":           {"hist": "MEfac", "procs": ["wbj"]},
+
+        "MEren_ttbar":         {"hist": "MEren", "procs": ["ttbar"]},
+        "MEren_DY":         {"hist": "MEren", "procs": ["DY"]},
+        "MEren_tW":         {"hist": "MEren", "procs": ["tW"]},
+        
+        #Newly added even though systematics have not been generated yet
+        "MEren_wjets":         {"hist": "MEren", "procs": ["wjets"]},
+        "MEren_diboson":       {"hist": "MEren", "procs": ["diboson"]},
+        "MEren_QCD":           {"hist": "MEren", "procs": ["QCD"]},
+        "MEren_wbj":           {"hist": "MEren", "procs": ["wbj"]},
+
+        "PDF":              {"hist": "PDF", "type": "envelope"},
+        "PDFalphas":        {"hist": "PDFalphas"},
+        "hdamp":            {"hist": "hdamp", "procs": ["ttbar"]},
+        "toppt":            {"hist": "TopPtReweighting", "procs": ["ttbar"], "type":"single", "index": 0, "onesided": true},
+
+        # Experimental uncertainties
+        "triggersf_ele":    {"hist": "triggersfEleData"},
+        "triggersf_mu":     {"hist": "triggersfMuData"},
+        "electron_id_sf":   {"hist": "electron_id_sf"},
+        "btagsf":           {"hist": "btagsf0"},
+        "btagsf_light":     {"hist": "btagsf0light"},
+        "JES":              {"hist": "JuncTotal"},      
+    },
+
+    # Normalization (log-normal) uncertainties
+    "lnN_uncs": {
+        "lumi":             {"unc": 0.021},
+        "DrellYanXS":       {"unc": 0.2, "procs": ["DY"]},
+        "tWXS":             {"unc": 0.15, "procs": ["tW"]}
+    },
+
+    ##################################################
+    # Plotting options
+    ##################################################
+
+    "ax_label": "Number of jets",
+    "colors": {
+        "ttbar": "xkcd:scarlet",
+        "tW": "tab:pink",
+        "DY": "tab:blue"
+    },
+    "display_names": {
+        "ttbar": "$t \\bar{t}$",
+        "tW": "tW",
+        "DY": "Drell-Yan"
+    },
+}
